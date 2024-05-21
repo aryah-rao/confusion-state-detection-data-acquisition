@@ -1,0 +1,16 @@
+[Unit]
+Description=Jetson Clocks
+ConditionPathExists=/usr/local/zed/tools/jetson_clocks
+After=network.target
+After=systemd-user-sessions.service
+After=network-online.target
+
+[Service]
+ExecStart=/usr/local/zed/tools/jetson_clocks
+User=root
+Restart=always
+RestartSec=120
+
+[Install]
+WantedBy=multi-user.target
+
