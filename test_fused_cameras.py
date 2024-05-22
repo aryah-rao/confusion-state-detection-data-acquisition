@@ -37,16 +37,18 @@ from signal import signal, SIGINT
 # Global variables to store camera objects and body tracking data
 zcameras = []  # List to keep track of active cameras
 body_json = []  # List to store serialized body tracking data
+experiment_folder = ""  # Global variable to store the experiment folder path
 
 # Handler to deal with CTRL+C (SIGINT) signal properly
 def handler(signal_received, frame):
-    global zcameras, body_json
+    global zcameras, body_json, experiment_folder
     print("got sigint, shutting cameras")
     for cam in zcameras:
         cam.disable_recording()  # Disable recording for each camera
         cam.close()  # Close each camera
     print("dumping json")
-    with open('body_tracking.json', 'w') as outfile:
+    body_tracking_file = os.path.join(experiment_folder, 'body_tracking.json')
+    with open(body_tracking_file, 'w') as outfile:
         json.dump(body_json, outfile)  # Save the collected body tracking data to a JSON file
     print("exiting")
     sys.exit(0)  # Exit the program
@@ -66,34 +68,34 @@ def serialize_body(body, timestamp):
     }
 
 # Function to create the folder for the current date if it doesn't exist
-def create_experiment_folder():
+def create_experiment_folder(context):
     experiments_path = "./experiments/"
     current_date = time.strftime("%Y-%m-%d")
-    folder_path = os.path.join(experiments_path, current_date)
+    folder_path = os.path.join(experiments_path, current_date, current_date + "_" + context)
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)
     return folder_path
 
 # Main function
 def main():
-    global zcameras, body_json
+    global zcameras, body_json, experiment_folder
     
     # Get context for file-naming
     context = input("Please enter the context for the recording files: ")
     
     # Create experiment folder
-    experiment_folder = create_experiment_folder()
+    experiment_folder = create_experiment_folder(context)
+    
+    # Generate the path for the localization (calibration) file
+    calibration_file_path = os.path.join(experiment_folder, 'calibration.json')
 
     # Check if the necessary argument (localization file) is provided
-    if len(sys.argv) < 2:
-        print("This sample displays the fused body tracking of multiple cameras.")
-        print("It needs a Localization file in input. Generate it with ZED 360.")
-        print("The cameras can either be plugged to your devices, or already running on the local network.")
+    if not os.path.exists(calibration_file_path):
+        print("Calibration file not found at", calibration_file_path)
         exit(1)
 
     # Read the fusion configuration file
-    filepath = sys.argv[1]
-    fusion_configurations = sl.read_fusion_configuration_file(filepath, sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP, sl.UNIT.METER)
+    fusion_configurations = sl.read_fusion_configuration_file(calibration_file_path, sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP, sl.UNIT.METER)
     if len(fusion_configurations) <= 0:
         print("Invalid file.")
         exit(1)
