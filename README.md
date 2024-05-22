@@ -54,7 +54,7 @@ python test_fused_cameras.py
 ```
 
 You will be prompted to enter the context:
-```bash
+```sh
 Please enter the context for the recording files: my_experiment
 ```
 
