@@ -2,7 +2,7 @@
 experiments/
 
 # Body Tracking JSON
-./body_tracking.json
+body_tracking.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
