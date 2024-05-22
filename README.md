@@ -22,15 +22,15 @@ Please follow the installation guide provided by Stereolabs to install the lates
 
 ### 1. Clone this repository to your local machine:
 
-    ```bash
-    git clone https://github.com/aryah-rao/denison-research-summer-24
-    ```
+```bash
+git clone https://github.com/aryah-rao/denison-research-summer-24
+```
 
 ### 2. Install the required dependencies:
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+```bash
+pip install -r requirements.txt
+```
 
 ### 3. Calibrate Cameras
 
@@ -69,13 +69,13 @@ All these files will be saved in the same directory as the calibration file.
 
 Example output:
 
-    ```bash
-    ./experiments/2024-05-21/2024-05-21_my_experiment/
-        calibration.json
-        body_tracking.json
-        2024-05-21_12-34-56_12345_my_experiment.svo
-        2024-05-21_12-34-56_67890_my_experiment.svo
-    ```
+```bash
+./experiments/2024-05-21/2024-05-21_my_experiment/
+    calibration.json
+    body_tracking.json
+    2024-05-21_12-34-56_12345_my_experiment.svo
+    2024-05-21_12-34-56_67890_my_experiment.svo
+```
 
 ### Notes
 
@@ -96,4 +96,4 @@ Example output:
 
 ## License
 
-    This repository is licensed under the [MIT License](LICENSE).
+This repository is licensed under the [MIT License](LICENSE).
