@@ -78,6 +78,9 @@ def create_experiment_folder():
 def main():
     global zcameras, body_json
     
+    # Get context for file-naming
+    context = input("Please enter the context for the recording files: ")
+    
     # Create experiment folder
     experiment_folder = create_experiment_folder()
 
@@ -183,8 +186,6 @@ def main():
     bodies = sl.Bodies()  # Create a Bodies object to store body tracking data
 
     # Enable recording for each local camera
-    context = input("Please enter the context for the recording files: ")
-
     for serial in senders:
         zcameras.append(senders[serial])  # Add camera to the global list for shutdown handling
         recording_filename = f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{serial}_{context}.svo"
