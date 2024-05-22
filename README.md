@@ -9,7 +9,7 @@ This repository contains the source code and resources for a research project ut
 To run the provided script, ensure you have the following dependencies installed:
 
 - Python 3.x
-- [PyZED SDK](https://www.stereolabs.com/docs/app-development/python/install): Make sure you have installed the latest version of PyZED by following the installation guide provided by Stereolabs.
+- PyZED SDK: Make sure you have installed the latest version of PyZED by following the installation guide provided by Stereolabs.
 - Other dependencies specified in `requirements.txt`.
 
 ### Installing PyZED SDK
