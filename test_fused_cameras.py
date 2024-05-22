@@ -183,9 +183,11 @@ def main():
     bodies = sl.Bodies()  # Create a Bodies object to store body tracking data
 
     # Enable recording for each local camera
+    context = input("Please enter the context for the recording files: ")
+
     for serial in senders:
         zcameras.append(senders[serial])  # Add camera to the global list for shutdown handling
-        recording_filename = f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{serial}_context.svo"
+        recording_filename = f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{serial}_{context}.svo"
         recording_path = os.path.join(experiment_folder, recording_filename)
         recording_param = sl.RecordingParameters(recording_path, sl.SVO_COMPRESSION_MODE.H265)  # Set recording parameters
         zed = senders[serial]  # Get the camera object
