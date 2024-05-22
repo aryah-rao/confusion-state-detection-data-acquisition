@@ -26,13 +26,13 @@ Please follow the installation guide provided by Stereolabs to install the lates
 git clone https://github.com/aryah-rao/denison-research-summer-24
 ```
 
-Follow the steps from here on for every experiment:
-
 ### 2. Install the required dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
+
+### Follow the steps from here on for every experiment:
 
 ### 3. Calibrate Cameras
 
