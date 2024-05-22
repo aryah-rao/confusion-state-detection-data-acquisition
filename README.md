@@ -86,9 +86,9 @@ Please follow the installation guide provided by Stereolabs to install the lates
     - If any errors occur during camera initialization or recording, check the ZED SDK documentation and ensure your cameras are properly set up and connected.
 
 ## Contributors
-    - Dr. Matthew Law
-    - Shaina Khan
-    - Aryah Rao
+- Dr. Matthew Law
+- Shaina Khan
+- Aryah Rao
 
 ## License
     This repository is licensed under the [MIT License](LICENSE).
