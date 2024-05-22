@@ -1,6 +1,9 @@
 # Experiments folder
 experiments/
 
+# Body Tracking JSON
+body_tracking.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
