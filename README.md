@@ -53,7 +53,7 @@ The script will automatically start the `ZED360` executable for calibration. Ens
 
 Follow the guide [here](https://www.stereolabs.com/docs/fusion/zed360) to complete calibration.
 
-Save the calibration file in the directory structure `./experiments/DATE/DATE_CONTEXT/`, where `DATE` is the current date and `CONTEXT` is the context you entered for your experiment, and close 'ZED360'.
+Save the calibration file in the directory structure `./experiments/DATE/DATE_CONTEXT/`, where `DATE` is the current date and `CONTEXT` is the context you entered for your experiment, and close `ZED360`.
 
 Example structure:
 ```bash
