@@ -34,22 +34,9 @@ pip install -r requirements.txt
 
 ### Follow the steps from here on for every experiment:
 
-### 3. Calibrate Cameras
+### 3. Run the Script
 
-First, you need to calibrate your ZED cameras using `zed360` from `zed-tools`. Follow the guide [here](https://www.stereolabs.com/docs/fusion/zed360).
-
-### 4. Save Calibration File
-
-Save the calibration file in the directory structure `./experiments/DATE/DATE_CONTEXT/`, where `DATE` is the current date and `CONTEXT` is a context description for your experiment.
-
-Example structure:
-```bash
-./experiments/2024-05-21/2024-05-21_my_experiment/calibration.json
-```
-
-### 5. Run the Script
-
-Run the `test_fused_cameras.py` script and enter the same context you used for the calibration file when prompted.
+Run the `test_fused_cameras.py` script and enter `CONTEXT` to create a unique folder and identiy the experiment.
 
 ```bash
 python test_fused_cameras.py
@@ -60,10 +47,26 @@ You will be prompted to enter the context:
 Please enter the context for the recording files: my_experiment
 ```
 
+### 4. Calibrate Cameras
+
+The script will automatically start the `ZED360` executable for calibration. Ensure the `ZED360` executable is located in the `./zed-tools/` directory. If not, adjust the path accordingly in the script.
+
+Follow the guide [here](https://www.stereolabs.com/docs/fusion/zed360) to complete calibration.
+
+Save the calibration file in the directory structure `./experiments/DATE/DATE_CONTEXT/`, where `DATE` is the current date and `CONTEXT` is the context you entered for your experiment.
+
+Example structure:
+```bash
+./experiments/2024-05-21/2024-05-21_my_experiment/calibration.json
+```
+
 ### 6. Recording and Output
 
-The script will find the calibration file, start recording, and perform body tracking. To end the recording, press CTRL+C. The script will output:
+Once calibration is complete, press any key to start recording. The script will begin capturing body tracking data from the connected ZED cameras.
 
+### 7. Stopping the script:
+
+To stop the script and save the recorded data, press CTRL+C. The script will handle the shutdown process, save the body tracking data to a JSON file, and close all cameras. The script will output:
 - One or more .svo files for each camera.
 - A body_tracking.json file with the recorded body tracking data.
 
