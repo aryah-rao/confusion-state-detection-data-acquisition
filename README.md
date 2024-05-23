@@ -105,7 +105,7 @@ Example output:
 
 ## Contributors
 
-- Dr. Matthew Law
+- Matthew Law
 - Shaina Khan
 - Aryah Rao
 
