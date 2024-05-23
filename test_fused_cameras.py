@@ -82,7 +82,7 @@ def main():
     global zcameras, body_json, experiment_folder
     
     # Get context for file-naming
-    context = input("Please enter the context for the recording files to start with recording: ")
+    context = input("Please enter the context for the experiment: ")
     
     # Create experiment folder
     experiment_folder = create_context_folder(context)
