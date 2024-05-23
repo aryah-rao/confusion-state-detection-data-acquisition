@@ -75,11 +75,11 @@ All these files will be saved in the same directory as the calibration file.
 Example output:
 
 ```bash
-./experiments/2024-05-21/2024-05-21_my_experiment/
+./experiments/YY-MM-DD/YY-MM-DD_my_experiment/
     calibration.json
     body_tracking.json
-    2024-05-21_12-34-56_12345_my_experiment.svo
-    2024-05-21_12-34-56_67890_my_experiment.svo
+    YY-MM-DD_12345_my_experiment.svo
+    YY-MM-DD_67890_my_experiment.svo
 ```
 
 ### Notes
