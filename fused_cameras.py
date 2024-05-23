@@ -19,17 +19,13 @@
 ########################################################################
 
 """
-   This script shows how to calibrate, record videos and detect human 
-   bodies from multiple ZED cameras and save a calibration file, video 
-   files for each camera, and a json file to store body tracking data.
+   This sample shows how to calibrate and record videos from multiple ZED 
+   cameras and save a calibration file, and video files for each camera.
+"""
 import os
-import datetime
-import cv2
+import time
 import sys
 import pyzed.sl as sl
-import time
-import ogl_viewer.viewer as gl
-import numpy as np
 import json
 import argparse
 from signal import signal, SIGINT
@@ -37,36 +33,36 @@ import subprocess  # To run the executable
 
 # Global variables to store camera objects and body tracking data
 zcameras = []  # List to keep track of active cameras
-body_json = []  # List to store serialized body tracking data
+# body_json = []  # List to store serialized body tracking data
 experiment_folder = ""  # Global variable to store the experiment folder path
 
 # Handler to deal with CTRL+C (SIGINT) signal properly
 def handler(signal_received, frame):
-    global zcameras, body_json, experiment_folder
+    global zcameras, experiment_folder
     print("got sigint, shutting cameras")
     for cam in zcameras:
         cam.disable_recording()  # Disable recording for each camera
         cam.close()  # Close each camera
-    print("dumping json")
-    body_tracking_file = os.path.join(experiment_folder, 'body_tracking.json')
-    with open(body_tracking_file, 'w') as outfile:
-        json.dump(body_json, outfile)  # Save the collected body tracking data to a JSON file
+    # print("dumping json")
+    # body_tracking_file = os.path.join(experiment_folder, 'body_tracking.json')
+    # with open(body_tracking_file, 'w') as outfile:
+    #     json.dump(body_json, outfile)  # Save the collected body tracking data to a JSON file
     print("exiting")
     sys.exit(0)  # Exit the program
 
 # Bind the handler to the SIGINT signal (usually triggered by CTRL+C)
 signal(SIGINT, handler)
 
-# Function to serialize body tracking data into a dictionary format
-def serialize_body(body, timestamp):
-    return {
-        "id": body.unique_object_id,  # Unique ID of the detected body
-        "ts": timestamp,  # Timestamp of the detection
-        "keypoint": body.keypoint.tolist(),  # List of keypoints (skeleton joints)
-        "confidence": body.confidence,  # Confidence level of the detection
-        # "tracking_state": body.tracking_state,
-        # "action_state": body.action_state
-    }
+# # Function to serialize body tracking data into a dictionary format
+# def serialize_body(body, timestamp):
+#     return {
+#         "id": body.unique_object_id,  # Unique ID of the detected body
+#         "ts": timestamp,  # Timestamp of the detection
+#         "keypoint": body.keypoint.tolist(),  # List of keypoints (skeleton joints)
+#         "confidence": body.confidence,  # Confidence level of the detection
+#         # "tracking_state": body.tracking_state,
+#         # "action_state": body.action_state
+#     }
 
 # Function to create the folder for the current date if it doesn't exist
 def create_context_folder(context):
@@ -79,7 +75,7 @@ def create_context_folder(context):
 
 # Main function
 def main():
-    global zcameras, body_json, experiment_folder
+    global zcameras, experiment_folder
     
     # Get context for file-naming
     context = input("Please enter the context for the experiment: ")
@@ -124,18 +120,18 @@ def main():
     init_params.camera_resolution = sl.RESOLUTION.HD720  # Set the camera resolution
     init_params.camera_fps = 30  # Set the camera frame rate
 
-    # Parameters for communication, positional tracking, and body tracking
+    # Parameters for communication and positional tracking
     communication_parameters = sl.CommunicationParameters()
     communication_parameters.set_for_shared_memory()  # Use shared memory for communication
 
     positional_tracking_parameters = sl.PositionalTrackingParameters()
     positional_tracking_parameters.set_as_static = True  # Set positional tracking as static
 
-    body_tracking_parameters = sl.BodyTrackingParameters()
-    body_tracking_parameters.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_FAST  # Set body tracking model
-    body_tracking_parameters.body_format = sl.BODY_FORMAT.BODY_34  # Set body format to BODY_34 (34 keypoints)
-    body_tracking_parameters.enable_body_fitting = True  # Enable body fitting
-    body_tracking_parameters.enable_tracking = True  # Enable tracking
+    # body_tracking_parameters = sl.BodyTrackingParameters()
+    # body_tracking_parameters.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_FAST  # Set body tracking model
+    # body_tracking_parameters.body_format = sl.BODY_FORMAT.BODY_34  # Set body format to BODY_34 (34 keypoints)
+    # body_tracking_parameters.enable_body_fitting = True  # Enable body fitting
+    # body_tracking_parameters.enable_tracking = True  # Enable tracking
 
     # Initialize cameras based on the configuration
     for conf in fusion_configurations:
@@ -163,12 +159,12 @@ def main():
                 del senders[conf.serial_number]  # Remove the camera if positional tracking fails
                 continue
 
-            # Enable body tracking
-            status = senders[conf.serial_number].enable_body_tracking(body_tracking_parameters)
-            if status != sl.ERROR_CODE.SUCCESS:
-                print("Error enabling the body tracking of camera", conf.serial_number)
-                del senders[conf.serial_number]  # Remove the camera if body tracking fails
-                continue
+            # # Enable body tracking
+            # status = senders[conf.serial_number].enable_body_tracking(body_tracking_parameters)
+            # if status != sl.ERROR_CODE.SUCCESS:
+            #     print("Error enabling the body tracking of camera", conf.serial_number)
+            #     del senders[conf.serial_number]  # Remove the camera if body tracking fails
+            #     continue
 
             # Start publishing data
             senders[conf.serial_number].start_publishing(communication_parameters)  # Start data publishing
@@ -198,7 +194,7 @@ def main():
     print("Cameras in this configuration : ", len(fusion_configurations))
 
     # Warmup recording
-    bodies = sl.Bodies()  # Create a Bodies object to store body tracking data
+    # bodies = sl.Bodies()  # Create a Bodies object to store body tracking data
 
     # Enable recording for each local camera
     for serial in senders:
@@ -213,7 +209,8 @@ def main():
             sys.exit(1)  # Exit if recording fails
         print('both cameras recording')
         if zed.grab() == sl.ERROR_CODE.SUCCESS:
-            zed.retrieve_bodies(bodies)  # Retrieve body tracking data
+            # zed.retrieve_bodies(bodies)  # Retrieve body tracking data
+            pass
 
     # Subscribe to each camera in the fusion configuration
     for i in range(0, len(fusion_configurations)):
@@ -235,38 +232,40 @@ def main():
         sys.exit(1)  # Exit if no cameras are connected
 
     # Set fusion body tracking parameters
-    body_tracking_fusion_params = sl.BodyTrackingFusionParameters()
-    body_tracking_fusion_params.enable_tracking = True  # Enable body tracking
-    body_tracking_fusion_params.enable_body_fitting = False  # Disable body fitting
+    # body_tracking_fusion_params = sl.BodyTrackingFusionParameters()
+    # body_tracking_fusion_params.enable_tracking = True  # Enable body tracking
+    # body_tracking_fusion_params.enable_body_fitting = False  # Disable body fitting
     
-    fusion.enable_body_tracking(body_tracking_fusion_params)  # Enable body tracking in fusion
+    # fusion.enable_body_tracking(body_tracking_fusion_params)  # Enable body tracking in fusion
 
     # Runtime parameters for body tracking
-    rt = sl.BodyTrackingFusionRuntimeParameters()
-    rt.skeleton_minimum_allowed_keypoints = 7  # Minimum allowed keypoints for a valid skeleton
+    # rt = sl.BodyTrackingFusionRuntimeParameters()
+    # rt.skeleton_minimum_allowed_keypoints = 7  # Minimum allowed keypoints for a valid skeleton
 
     # viewer = gl.GLViewer()
     # viewer.init()
 
     # Create ZED objects filled in the main loop
-    bodies = sl.Bodies()  # Create a Bodies object to store body tracking data
-    single_bodies = [sl.Bodies]  # List to store bodies from individual cameras
+    # bodies = sl.Bodies()  # Create a Bodies object to store body tracking data
+    # single_bodies = [sl.Bodies]  # List to store bodies from individual cameras
 
     # Main loop to grab and process body tracking data
     while True:
         for serial in senders:
             zed = senders[serial]  # Get the camera object
             if zed.grab() == sl.ERROR_CODE.SUCCESS:
-                zed.retrieve_bodies(bodies)  # Retrieve body tracking data
+                # zed.retrieve_bodies(bodies)  # Retrieve body tracking data
+                pass
 
         if fusion.process() == sl.FUSION_ERROR_CODE.SUCCESS:
-            fusion.retrieve_bodies(bodies, rt)  # Retrieve fused body tracking data
-            body_json.append([serialize_body(b, bodies.timestamp.get_milliseconds()) for b in bodies.body_list])  # Serialize and store body tracking data
+            # fusion.retrieve_bodies(bodies, rt)  # Retrieve fused body tracking data
+            # body_json.append([serialize_body(b, bodies.timestamp.get_milliseconds()) for b in bodies.body_list])  # Serialize and store body tracking data
 
             # for debug, you can retrieve the data send by each camera, as well as communication and process stat just to make sure everything is okay
             # for cam in camera_identifiers:
             #     fusion.retrieveBodies(single_bodies, rt, cam);
             # viewer.update_bodies(bodies)
+            pass
             
     for sender in senders:
         senders[sender].close()  # Close each camera
