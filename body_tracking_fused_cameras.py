@@ -106,8 +106,7 @@ def main():
         exit(1)
     
     print("Calibration is done.")
-    print("Press any key to start recording...")
-    input()  # Wait for user input
+    input("Press any key to start recording...")  # Wait for user input
     
     # Read the fusion configuration file
     fusion_configurations = sl.read_fusion_configuration_file(calibration_file_path, sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP, sl.UNIT.METER)
@@ -205,7 +204,7 @@ def main():
     # Enable recording for each local camera
     for serial in senders:
         zcameras.append(senders[serial])  # Add camera to the global list for shutdown handling
-        recording_filename = f"{time.strftime('%Y-%m-%d_%H-%M-%S')}_{serial}_{context}.svo"
+        recording_filename = f"{time.strftime('%Y-%m-%d')}_{serial}_{context}.svo"
         recording_path = os.path.join(experiment_folder, recording_filename)
         recording_param = sl.RecordingParameters(recording_path, sl.SVO_COMPRESSION_MODE.H265)  # Set recording parameters
         zed = senders[serial]  # Get the camera object
