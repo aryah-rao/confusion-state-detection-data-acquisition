@@ -73,6 +73,33 @@ def create_context_folder(context):
         os.makedirs(folder_path)
     return folder_path
 
+# Function to run the calibration using ZED360 executable
+def run_calibration(experiment_folder):
+    zed360_executable = os.path.join("./zed-tools/", "ZED360")
+    if not os.path.exists(zed360_executable):
+        print(f"ZED360 executable not found at {zed360_executable}")
+        exit(1)
+    
+    print("Starting ZED360 for calibration...")
+    subprocess.run([zed360_executable])  # Run the executable and wait for it to close
+    
+    # Check if the necessary calibration file exists
+    calibration_file_path = os.path.join(experiment_folder, 'calibration.json')
+    if not os.path.exists(calibration_file_path):
+        print("Calibration file not found at", calibration_file_path)
+        exit(1)
+    
+    # Read the fusion configuration file
+    fusion_configurations = sl.read_fusion_configuration_file(calibration_file_path, sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP, sl.UNIT.METER)
+    if len(fusion_configurations) <= 0:
+        print("Invalid file.")
+        exit(1)
+    
+    print("Calibration successful.")
+    input("Press any key to start recording...")  # Wait for user input
+
+    return fusion_configurations
+
 # Main function
 def main():
     global zcameras, experiment_folder
@@ -83,31 +110,8 @@ def main():
     # Create experiment folder
     experiment_folder = create_context_folder(context)
     
-    # Open the ZED360 executable and wait for it to close
-    zed360_executable = os.path.join("./zed-tools/", "ZED360")
-    if not os.path.exists(zed360_executable):
-        print(f"ZED360 executable not found at {zed360_executable}")
-        exit(1)
-    
-    print("Starting ZED360 for calibration...")
-    subprocess.run([zed360_executable])  # Run the executable and wait for it to close
-    print("Calibration is done.")
-    print("Press any key to start recording...")
-    input()  # Wait for user input
-    
-    # Generate the path for the localization (calibration) file
-    calibration_file_path = os.path.join(experiment_folder, 'calibration.json')
-
-    # Check if the necessary argument (localization file) is provided
-    if not os.path.exists(calibration_file_path):
-        print("Calibration file not found at", calibration_file_path)
-        exit(1)
-
-    # Read the fusion configuration file
-    fusion_configurations = sl.read_fusion_configuration_file(calibration_file_path, sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP, sl.UNIT.METER)
-    if len(fusion_configurations) <= 0:
-        print("Invalid file.")
-        exit(1)
+    # Run calibration
+    fusion_configurations = run_calibration(experiment_folder)
 
     senders = {}  # Dictionary to store local camera objects
     network_senders = {}  # Dictionary to store network camera identifiers
