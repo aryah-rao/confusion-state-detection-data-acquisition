@@ -15,10 +15,9 @@ To run the provided script, ensure you have the following dependencies installed
 
 ### Installing PyZED SDK
 
-Please follow the installation guide provided by Stereolabs to install the latest version of PyZED SDK:
-[PyZED SDK Installation Guide](https://www.stereolabs.com/docs/app-development/python/install)
 
-## Usage
+
+## Setup
 
 ### 1. Clone this repository to your local machine:
 
@@ -28,11 +27,22 @@ git clone https://github.com/aryah-rao/denison-research-summer-24
 
 ### 2. Install the required dependencies:
 
+Please follow the installation guide provided by Stereolabs to install the latest version of PyZED SDK:
+[PyZED SDK Installation Guide](https://www.stereolabs.com/docs/app-development/python/install)
+
+Install OpenCV using your Linux distro's package manager. For Ubuntu/Debian, this is:
+
+```bash
+sudo apt install libopencv-dev python3-opencv
+```
+
+Install other requirements:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### Follow the steps from here on for every experiment:
+## Usage
 
 ### 3. Run the Script
 
@@ -53,7 +63,7 @@ The script will automatically start the `ZED360` executable for calibration. Ens
 
 Follow the guide [here](https://www.stereolabs.com/docs/fusion/zed360) to complete calibration.
 
-Save the calibration file in the file path `./experiments/DATE/DATE_CONTEXT/`, where `DATE` is the current date and `CONTEXT` is the context you entered for your experiment, and close `ZED360`.
+Save the calibration file in the file path `./experiments/DATE/DATE_CONTEXT/`, where `DATE` is the current date and `CONTEXT` is the context you entered for your experiment.
 
 Example structure:
 ```bash
@@ -62,7 +72,7 @@ Example structure:
 
 ### 6. Recording and Output
 
-Once calibration is complete, press any key to start recording. The script will begin capturing body tracking data from the connected ZED cameras.
+Once calibration is complete, close `ZED360`, and then press any key to start recording. The script will begin capturing body tracking data from the connected ZED cameras.
 
 ### 7. Stopping the script:
 
@@ -95,7 +105,7 @@ Example output:
 
 ## Contributors
 
-- Dr. Matthew Law
+- Matthew Law
 - Shaina Khan
 - Aryah Rao
 
