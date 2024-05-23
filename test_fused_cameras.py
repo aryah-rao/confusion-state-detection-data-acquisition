@@ -77,21 +77,9 @@ def create_context_folder(context):
         os.makedirs(folder_path)
     return folder_path
 
-# Function to check if the experiments folder for the current date exists, and create it if not
-def create_date_folder():
-    experiments_path = "./experiments/"
-    current_date = time.strftime("%Y-%m-%d")
-    date_folder_path = os.path.join(experiments_path, current_date)
-    if not os.path.exists(date_folder_path):
-        os.makedirs(date_folder_path)
-    return date_folder_path
-
 # Main function
 def main():
     global zcameras, body_json, experiment_folder
-    
-    # Check and create the experiments date folder
-    # date_folder_path = create_date_folder()
     
     # Get context for file-naming
     context = input("Please enter the context for the recording files to start with recording: ")
