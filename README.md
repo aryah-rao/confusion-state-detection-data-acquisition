@@ -44,7 +44,7 @@ python test_fused_cameras.py
 
 You will be prompted to enter the context:
 ```bash
-python Please enter the context for the experiment: my_experiment
+Please enter the context for the experiment: my_experiment
 ```
 
 ### 4. Calibrate Cameras
