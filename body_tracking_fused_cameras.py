@@ -19,7 +19,7 @@
 ########################################################################
 
 """
-   This sample shows how to detect human bodies and draw their 
+   This script shows how to detect human bodies and draw their 
    modelized skeleton in an OpenGL window
 """
 import os
