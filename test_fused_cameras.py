@@ -33,6 +33,7 @@ import numpy as np
 import json
 import argparse
 from signal import signal, SIGINT
+import subprocess  # To run the executable
 
 # Global variables to store camera objects and body tracking data
 zcameras = []  # List to keep track of active cameras
@@ -68,7 +69,7 @@ def serialize_body(body, timestamp):
     }
 
 # Function to create the folder for the current date if it doesn't exist
-def create_experiment_folder(context):
+def create_context_folder(context):
     experiments_path = "./experiments/"
     current_date = time.strftime("%Y-%m-%d")
     folder_path = os.path.join(experiments_path, current_date, current_date + "_" + context)
@@ -76,15 +77,39 @@ def create_experiment_folder(context):
         os.makedirs(folder_path)
     return folder_path
 
+# Function to check if the experiments folder for the current date exists, and create it if not
+def create_date_folder():
+    experiments_path = "./experiments/"
+    current_date = time.strftime("%Y-%m-%d")
+    date_folder_path = os.path.join(experiments_path, current_date)
+    if not os.path.exists(date_folder_path):
+        os.makedirs(date_folder_path)
+    return date_folder_path
+
 # Main function
 def main():
     global zcameras, body_json, experiment_folder
     
+    # Check and create the experiments date folder
+    # date_folder_path = create_date_folder()
+    
     # Get context for file-naming
-    context = input("Please enter the context for the recording files: ")
+    context = input("Please enter the context for the recording files to start with recording: ")
     
     # Create experiment folder
-    experiment_folder = create_experiment_folder(context)
+    experiment_folder = create_context_folder(context)
+    
+    # Open the ZED360 executable and wait for it to close
+    zed360_executable = os.path.join("./zed-tools/", "ZED360")
+    if not os.path.exists(zed360_executable):
+        print(f"ZED360 executable not found at {zed360_executable}")
+        exit(1)
+    
+    print("Starting ZED360 for calibration...")
+    subprocess.run([zed360_executable])  # Run the executable and wait for it to close
+    print("Calibration is done.")
+    print("Press any key to start recording...")
+    input()  # Wait for user input
     
     # Generate the path for the localization (calibration) file
     calibration_file_path = os.path.join(experiment_folder, 'calibration.json')
