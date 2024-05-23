@@ -30,13 +30,13 @@ git clone https://github.com/aryah-rao/denison-research-summer-24
 Please follow the installation guide provided by Stereolabs to install the latest version of PyZED SDK:
 [PyZED SDK Installation Guide](https://www.stereolabs.com/docs/app-development/python/install)
 
-Please follow these steps to install opencv:
+Install OpenCV using your Linux distro's package manager. For Ubuntu/Debian, this is:
 
 ```bash
 sudo apt install libopencv-dev python3-opencv
 ```
 
-Please follow these steps to install other requirements:
+Install other requirements:
 
 ```bash
 pip install -r requirements.txt
