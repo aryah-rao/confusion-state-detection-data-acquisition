@@ -36,10 +36,10 @@ pip install -r requirements.txt
 
 ### 3. Run the Script
 
-Run the `test_fused_cameras.py` script and enter `CONTEXT` to create a unique folder and identiy the experiment.
+Run the `body_tracking_fused_cameras.py` script and enter `CONTEXT` to create a unique folder and identiy the experiment.
 
 ```bash
-python test_fused_cameras.py
+python body_tracking_fused_cameras.py
 ```
 
 You will be prompted to enter the context:
