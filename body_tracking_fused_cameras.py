@@ -96,9 +96,6 @@ def main():
     
     print("Starting ZED360 for calibration...")
     subprocess.run([zed360_executable])  # Run the executable and wait for it to close
-    print("Calibration is done.")
-    print("Press any key to start recording...")
-    input()  # Wait for user input
     
     # Generate the path for the localization (calibration) file
     calibration_file_path = os.path.join(experiment_folder, 'calibration.json')
@@ -107,7 +104,11 @@ def main():
     if not os.path.exists(calibration_file_path):
         print("Calibration file not found at", calibration_file_path)
         exit(1)
-
+    
+    print("Calibration is done.")
+    print("Press any key to start recording...")
+    input()  # Wait for user input
+    
     # Read the fusion configuration file
     fusion_configurations = sl.read_fusion_configuration_file(calibration_file_path, sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP, sl.UNIT.METER)
     if len(fusion_configurations) <= 0:
