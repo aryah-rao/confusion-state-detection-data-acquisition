@@ -15,10 +15,9 @@ To run the provided script, ensure you have the following dependencies installed
 
 ### Installing PyZED SDK
 
-Please follow the installation guide provided by Stereolabs to install the latest version of PyZED SDK:
-[PyZED SDK Installation Guide](https://www.stereolabs.com/docs/app-development/python/install)
 
-## Usage
+
+## Setup
 
 ### 1. Clone this repository to your local machine:
 
@@ -28,11 +27,22 @@ git clone https://github.com/aryah-rao/denison-research-summer-24
 
 ### 2. Install the required dependencies:
 
+Please follow the installation guide provided by Stereolabs to install the latest version of PyZED SDK:
+[PyZED SDK Installation Guide](https://www.stereolabs.com/docs/app-development/python/install)
+
+Please follow these steps to install opencv:
+
+```bash
+sudo apt install libopencv-dev python3-opencv
+```
+
+Please follow these steps to install other requirements:
+
 ```bash
 pip install -r requirements.txt
 ```
 
-### Follow the steps from here on for every experiment:
+## Usage
 
 ### 3. Run the Script
 
