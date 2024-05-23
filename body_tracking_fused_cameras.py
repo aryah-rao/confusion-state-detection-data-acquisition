@@ -22,6 +22,7 @@
    This script shows how to calibrate, record videos and detect human 
    bodies from multiple ZED cameras and save a calibration file, video 
    files for each camera, and a json file to store body tracking data.
+"""
 import os
 import datetime
 import cv2
