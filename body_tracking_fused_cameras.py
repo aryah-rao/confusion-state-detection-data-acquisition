@@ -124,7 +124,7 @@ def main():
     # Common parameters for camera initialization
     init_params = sl.InitParameters()
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP  # Set the coordinate system
-    init_params.coordinate_units = sl.UNIT.METER  # Set the unit of measurement
+    init_params.coordinate_units = sl.UNIT.METER  # Set the unit of measuret
     init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE  # Set the depth mode for performance
     init_params.camera_resolution = sl.RESOLUTION.HD720  # Set the camera resolution
     init_params.camera_fps = 30  # Set the camera frame rate
