@@ -118,6 +118,12 @@ def main():
         print("Failed to calculate average frame rate.")
         exit()
 
+    # Write average frame rate to metadata JSON file
+    metadata = {"average_frame_rate": average_frame_rate}
+    metadata_path = os.path.join(directory, "metadata.json")
+    with open(metadata_path, "w") as json_file:
+        json.dump(metadata, json_file)
+
     # Specify SVO path parameter
     init_params = sl.InitParameters()
     init_params.set_from_svo_file(svo_input_path)
