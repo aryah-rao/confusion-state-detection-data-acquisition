@@ -47,6 +47,9 @@ def handler(signal_received, frame):
     # body_tracking_file = os.path.join(experiment_folder, 'body_tracking.json')
     # with open(body_tracking_file, 'w') as outfile:
     #     json.dump(body_json, outfile)  # Save the collected body tracking data to a JSON file
+    
+    # Update calibration.json
+    update_calibration(experiment_folder)
     print("exiting")
     sys.exit(0)  # Exit the program
 
@@ -99,6 +102,34 @@ def run_calibration(experiment_folder):
     input("Press any key to start recording...")  # Wait for user input
 
     return fusion_configurations
+
+# Function to update calibration.json at the end to run body_tracking later
+def update_calibration(experiment_folder):
+    json_file_path = os.path.join(experiment_folder, "calibration.json")
+    
+    # Load the JSON data from the file
+    with open(json_file_path, 'r') as file:
+        data = json.load(file)
+
+    # Iterate over each camera entry in the JSON structure
+    for serial_number, camera_data in data.items():
+        # Update the type for the zed configuration
+        camera_data['input']['zed']['type'] = "SVO_FILE"
+        
+        # Create the new configuration path based on the folderpath and serial number
+        folder_name = os.path.basename(experiment_folder)
+        base_name, timestamp = folder_name.split('_')
+        new_configuration_path = os.path.join(
+            experiment_folder,
+            f"{base_name}_{serial_number}_{timestamp}.svo2"
+        )
+        camera_data['input']['zed']['configuration'] = new_configuration_path
+
+    # Write the updated JSON data back to the file
+    with open(json_file_path, 'w') as file:
+        json.dump(data, file, indent=4)
+
+    print("Calibration JSON file updated successfully.")
 
 # Main function
 def main():
