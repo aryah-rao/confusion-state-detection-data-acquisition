@@ -1,23 +1,3 @@
-########################################################################
-#
-# Copyright (c) 2022, STEREOLABS.
-#
-# All rights reserved.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-########################################################################
-
 import sys
 import pyzed.sl as sl
 import numpy as np
@@ -29,33 +9,42 @@ import os
 import time
 import json
 
-def progress_bar(percent_done, bar_length=50):
-    #Display a progress bar
+# Function to display a progress bar in the console
+def progress_bar(current, total, bar_length=50):
+    # Calculate the percentage of progress
+    percent_done = int(100 * current / total)
+    # Calculate the length of the progress bar
     done_length = int(bar_length * percent_done / 100)
+    # Create the visual representation of the progress bar
     bar = '=' * done_length + '-' * (bar_length - done_length)
-    sys.stdout.write('[%s] %i%s\r' % (bar, percent_done, '%'))
+    # Print the progress bar
+    sys.stdout.write('[%s] %i%%\r' % (bar, percent_done))
     sys.stdout.flush()
 
+# Enum to define application types for different video outputs
 class AppType(enum.Enum):
-    LEFT_AND_RIGHT = 1
-    LEFT_AND_DEPTH = 2
-    LEFT_AND_DEPTH_16 = 3
+    LEFT_AND_RIGHT = 1    # Export LEFT and RIGHT views
+    LEFT_AND_DEPTH = 2    # Export LEFT view and DEPTH view
+    LEFT_AND_DEPTH_16 = 3 # Export LEFT view and 16-bit DEPTH view
 
+# Function to calculate the average frame rate of an SVO file
 def calculate_average_frame_rate(svo_path):
+    # Initialize ZED camera parameters
     init_params = sl.InitParameters()
     init_params.set_from_svo_file(svo_path)
-    init_params.svo_real_time_mode = False  # Don't convert in realtime
+    init_params.svo_real_time_mode = False  # Disable real-time mode for conversion
 
+    # Create a ZED camera object
     zed = sl.Camera()
     if zed.open(init_params) != sl.ERROR_CODE.SUCCESS:
         print("Failed to open SVO file:", svo_path)
         return None
     
-    # Get the total number of frames
+    # Get the total number of frames in the SVO file
     total_frames = zed.get_svo_number_of_frames()
     print(f"Total frames in the SVO file: {total_frames}")
 
-    # Go to the first frame and get the timestamp
+    # Move to the first frame and get the timestamp
     zed.set_svo_position(0)
     if zed.grab() == sl.ERROR_CODE.SUCCESS:
         start_timestamp = zed.get_timestamp(sl.TIME_REFERENCE.IMAGE).get_microseconds()
@@ -65,7 +54,7 @@ def calculate_average_frame_rate(svo_path):
         zed.close()
         return None
     
-    # Go to the last frame and get the timestamp
+    # Move to the last frame and get the timestamp
     zed.set_svo_position(total_frames - 2)
     if zed.grab() == sl.ERROR_CODE.SUCCESS:
         end_timestamp = zed.get_timestamp(sl.TIME_REFERENCE.IMAGE).get_microseconds()
@@ -75,15 +64,16 @@ def calculate_average_frame_rate(svo_path):
         zed.close()
         return None
 
-    # Close the camera
+    # Close the ZED camera
     zed.close()
 
-    # Calculate the real average frame rate
+    # Calculate the elapsed time between the first and last frames in seconds
     elapsed_time = (end_timestamp - start_timestamp) / 1000000.0  # Convert microseconds to seconds
     print(f"Elapsed time in seconds: {elapsed_time}")
     successfully_captured_frames = total_frames
     print(f"Successfully captured frames: {successfully_captured_frames}")
 
+    # Calculate average frame rate
     if successfully_captured_frames > 0 and elapsed_time > 0:
         average_frame_rate = successfully_captured_frames / elapsed_time
     else:
@@ -97,135 +87,144 @@ def calculate_average_frame_rate(svo_path):
     
     return average_frame_rate
 
+# Main function
 def main():
-    # Get input parameters
-    svo_input_path = opt.input_svo_file
+    # Get input parameters from command line
+    folder_path = opt.folder_path
     
-    # Extract directory and filename from input_svo_file
-    directory, filename = os.path.split(svo_input_path)
-    
-    # Construct output AVI file path
-    output_avi_path = os.path.join(directory, os.path.splitext(filename)[0] + ".avi")
-    
+    # Find all .svo2 files in the specified folder
+    svo_files = sorted(Path(folder_path).rglob("*.svo2"))
+    if not svo_files:
+        print("No .svo2 files found in the specified folder.")
+        exit()
+
+    # Set application type based on mode input
     app_type = AppType.LEFT_AND_RIGHT
     if opt.mode == 1 or opt.mode == 3:
         app_type = AppType.LEFT_AND_DEPTH
     if opt.mode == 4:
         app_type = AppType.LEFT_AND_DEPTH_16
 
-    # Calculate average frame rate
-    average_frame_rate = calculate_average_frame_rate(svo_input_path)
+    # Extract the current folder name from the folder_path
+    current_folder_name = os.path.basename(folder_path)
+
+    # Construct the output AVI file path
+    output_avi_path = os.path.join(folder_path, f"{current_folder_name}.avi")
+
+    # Calculate average frame rate based on the first SVO file
+    average_frame_rate = calculate_average_frame_rate(str(svo_files[0]))
     if average_frame_rate is None:
         print("Failed to calculate average frame rate.")
         exit()
 
     # Write average frame rate to metadata JSON file
-    metadata = {"average_frame_rate": average_frame_rate}
-    metadata_path = os.path.join(directory, "metadata.json")
+    metadata = {"average_frame_rate": average_frame_rate, "seconds": [], "frames": []}
+    metadata_path = os.path.join(folder_path, "metadata.json")
     with open(metadata_path, "w") as json_file:
         json.dump(metadata, json_file)
 
-    # Specify SVO path parameter
+    # Create ZED objects for each SVO file
+    zeds = [sl.Camera() for _ in svo_files]
     init_params = sl.InitParameters()
-    init_params.set_from_svo_file(svo_input_path)
-    init_params.svo_real_time_mode = False  # Don't convert in realtime
-    init_params.coordinate_units = sl.UNIT.MILLIMETER  # Use milliliter units (for depth measurements)
-    init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE  # Set the depth mode for performance
+    rt_param = sl.RuntimeParameters()
 
-    # Create ZED objects
-    zed = sl.Camera()
+    # Initialize each ZED camera with the SVO file
+    for zed, svo_path in zip(zeds, svo_files):
+        init_params.set_from_svo_file(str(svo_path))
+        init_params.svo_real_time_mode = False
+        init_params.coordinate_units = sl.UNIT.MILLIMETER
+        init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
 
-    # Open the SVO file specified as a parameter
-    if zed.open(init_params) != sl.ERROR_CODE.SUCCESS:
-        print("Failed to open SVO file:", svo_input_path)
-        exit()
-    
-    # Get image size
-    image_size = zed.get_camera_information().camera_configuration.resolution
+        if zed.open(init_params) != sl.ERROR_CODE.SUCCESS:
+            print("Failed to open SVO file:", svo_path)
+            exit()
+
+    # Get image size from the first camera
+    image_size = zeds[0].get_camera_information().camera_configuration.resolution
     width = image_size.width
     height = image_size.height
-    width_sbs = width * 2
-    
-    # Prepare side by side image container equivalent to CV_8UC4
+    width_sbs = width * len(svo_files)
+
+    # Prepare a side-by-side image container
     svo_image_sbs_rgba = np.zeros((height, width_sbs, 4), dtype=np.uint8)
 
-    # Prepare single image containers
-    left_image = sl.Mat()
-    right_image = sl.Mat()
-    depth_image = sl.Mat()
+    # Prepare single image containers for each camera
+    left_images = [sl.Mat() for _ in svo_files]
+    right_images = [sl.Mat() for _ in svo_files]
+    depth_images = [sl.Mat() for _ in svo_files]
 
-    # Create video writer with calculated average frame rate
+    # Create video writer with the calculated average frame rate
     video_writer = cv2.VideoWriter(output_avi_path,
-                                   cv2.VideoWriter_fourcc('M', '4', 'S', '2'),
+                                   cv2.VideoWriter_fourcc('X', 'V', 'I', 'D'),
                                    average_frame_rate,
                                    (width_sbs, height))
     if not video_writer.isOpened():
         print("OpenCV video writer cannot be opened. Please check the .avi file path and write permissions.")
-        zed.close()
+        for zed in zeds:
+            zed.close()
         exit()
 
-    rt_param = sl.RuntimeParameters()
+    # Get the total number of frames in the shortest SVO file
+    total_frames = min(zed.get_svo_number_of_frames() for zed in zeds)
 
-    # Start SVO conversion to AVI/SEQUENCE
-    print("Converting SVO... Use Ctrl-C to interrupt conversion.")
+    # Start SVO conversion to AVI
+    print("Converting SVO files... Use Ctrl-C to interrupt conversion.")
 
-    nb_frames = zed.get_svo_number_of_frames()
-
+    current_frame = 0
     while True:
-        err = zed.grab(rt_param)
-        if err == sl.ERROR_CODE.SUCCESS:
-            svo_position = zed.get_svo_position()
+        end_of_files = True
+        for idx, zed in enumerate(zeds):
+            err = zed.grab(rt_param)
+            if err == sl.ERROR_CODE.SUCCESS:
+                end_of_files = False
+                zed.retrieve_image(left_images[idx], sl.VIEW.LEFT)
 
-            # Retrieve SVO images
-            zed.retrieve_image(left_image, sl.VIEW.LEFT)
+                if app_type == AppType.LEFT_AND_RIGHT:
+                    zed.retrieve_image(right_images[idx], sl.VIEW.RIGHT)
+                elif app_type == AppType.LEFT_AND_DEPTH:
+                    zed.retrieve_image(right_images[idx], sl.VIEW.DEPTH)
+                elif app_type == AppType.LEFT_AND_DEPTH_16:
+                    zed.retrieve_measure(depth_images[idx], sl.MEASURE.DEPTH)
 
-            if app_type == AppType.LEFT_AND_RIGHT:
-                zed.retrieve_image(right_image, sl.VIEW.RIGHT)
-            elif app_type == AppType.LEFT_AND_DEPTH:
-                zed.retrieve_image(right_image, sl.VIEW.DEPTH)
-            elif app_type == AppType.LEFT_AND_DEPTH_16:
-                zed.retrieve_measure(depth_image, sl.MEASURE.DEPTH)
+                # Copy the retrieved image data to the side-by-side container
+                svo_image_sbs_rgba[0:height, idx*width:(idx+1)*width, :] = left_images[idx].get_data()
 
-            # Copy the left image to the left side of SBS image
-            svo_image_sbs_rgba[0:height, 0:width, :] = left_image.get_data()
-
-            # Copy the right image to the right side of SBS image
-            svo_image_sbs_rgba[0:, width:, :] = right_image.get_data()
-
-            # Convert SVO image from RGBA to RGB
-            ocv_image_sbs_rgb = cv2.cvtColor(svo_image_sbs_rgba, cv2.COLOR_RGBA2RGB)
-
-            # Write the RGB image in the video
-            video_writer.write(ocv_image_sbs_rgb)
-
-            # Display progress
-            progress_bar((svo_position + 1) / nb_frames * 100, 30)
-
-        if err == sl.ERROR_CODE.END_OF_SVOFILE_REACHED:
-            progress_bar(100, 30)
-            print("\nSVO end has been reached. Exiting now.")
+        if end_of_files:
             break
+
+        # Convert RGBA image to RGB format for OpenCV
+        ocv_image_sbs_rgb = cv2.cvtColor(svo_image_sbs_rgba, cv2.COLOR_RGBA2RGB)
+        # Write the frame to the video file
+        video_writer.write(ocv_image_sbs_rgb)
+
+        # Update progress bar
+        current_frame += 1
+        progress_bar(current_frame, total_frames)
 
     # Close the video writer
     video_writer.release()
+    for zed in zeds:
+        zed.close()
 
-    zed.close()
+    print("\nConversion completed.")
     return 0
 
 if __name__ == "__main__":
+    # Argument parser for command line options
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--mode', type=int, required=True, help=" Mode 0 is to export LEFT+RIGHT AVI. \n Mode 1 is to export LEFT+DEPTH_VIEW Avi. \n Mode 2 is to export LEFT+RIGHT image sequence. \n Mode 3 is to export LEFT+DEPTH_View image sequence. \n Mode 4 is to export LEFT+DEPTH_16BIT image sequence.")
-    parser.add_argument('--input_svo_file', type=str, required=True, help='Path to the .svo file')
+    parser.add_argument('--folder_path', type=str, required=True, help='Path to the folder containing .svo2 files')
     opt = parser.parse_args()
+    
+    # Validate the mode input
     if opt.mode > 4 or opt.mode < 0:
         print("Mode should be between 0 and 4 included. \n Mode 0 is to export LEFT+RIGHT AVI. \n Mode 1 is to export LEFT+DEPTH_VIEW Avi. \n Mode 2 is to export LEFT+RIGHT image sequence. \n Mode 3 is to export LEFT+DEPTH_View image sequence. \n Mode 4 is to export LEFT+DEPTH_16BIT image sequence.")
         exit()
-    if not opt.input_svo_file.endswith(".svo") and not opt.input_svo_file.endswith(".svo2"):
-        print("--input_svo_file parameter should be a .svo file but is not : ", opt.input_svo_file, "Exit program.")
+    
+    # Validate the folder path
+    if not os.path.isdir(opt.folder_path):
+        print("--folder_path parameter should be an existing directory but is not: ", opt.folder_path)
         exit()
-    if not os.path.isfile(opt.input_svo_file):
-        print("--input_svo_file parameter should be an existing file but is not : ", opt.input_svo_file,
-              "Exit program.")
-        exit()
-
+    
+    # Run the main function
     main()
