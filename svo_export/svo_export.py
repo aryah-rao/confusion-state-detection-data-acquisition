@@ -27,6 +27,7 @@ import enum
 import argparse
 import os
 import time
+import json
 
 def progress_bar(percent_done, bar_length=50):
     #Display a progress bar
