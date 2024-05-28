@@ -1,38 +1,46 @@
+########################################################################
+#
+# Copyright (c) 2022, STEREOLABS.
+#
+# All rights reserved.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+########################################################################
+
+"""
+   This sample shows how to detect a human bodies and draw their 
+   modelised skeleton in an OpenGL window
+"""
 import cv2
 import sys
-import os
 import pyzed.sl as sl
 import time
 import ogl_viewer.viewer as gl
 import numpy as np
-import argparse
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('--input_svo_file', type=str, required=True, help='Path to the .svo file')
-    opt = parser.parse_args()
-    if not opt.input_svo_file.endswith(".svo") and not opt.input_svo_file.endswith(".svo2"):
-        print("--input_svo_file parameter should be a .svo file but is not : ", opt.input_svo_file, "Exit program.")
-        exit()
-
-    input_svo_file = opt.input_svo_file
-
-    if not os.path.isfile(input_svo_file):
-        print(f"Input file {input_svo_file} does not exist.")
+    if len(sys.argv) < 2:
+        print("This sample display the fused body tracking of multiple cameras.")
+        print("It needs a Localization file in input. Generate it with ZED 360.")
+        print("The cameras can either be plugged to your devices, or already running on the local network.")
         exit(1)
 
-    input_folder = os.path.dirname(input_svo_file)
-    calibration_file = os.path.join(input_folder, "calibration.json")
-    output_file = os.path.join(input_folder, "body_tracking.json")
-
-    if not os.path.isfile(calibration_file):
-        print(f"Calibration file {calibration_file} does not exist.")
-        exit(1)
-
-    fusion_configurations = sl.read_fusion_configuration_file(calibration_file, sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP, sl.UNIT.METER)
+    filepath = sys.argv[1]
+    fusion_configurations = sl.read_fusion_configuration_file(filepath, sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP, sl.UNIT.METER)
     if len(fusion_configurations) <= 0:
-        print("Invalid calibration file.")
+        print("Invalid file.")
         exit(1)
 
     senders = {}
@@ -54,8 +62,8 @@ if __name__ == "__main__":
     body_tracking_parameters = sl.BodyTrackingParameters()
     body_tracking_parameters.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_ACCURATE
     body_tracking_parameters.body_format = sl.BODY_FORMAT.BODY_18
-    body_tracking_parameters.enable_body_fitting = True
-    body_tracking_parameters.enable_tracking = True
+    body_tracking_parameters.enable_body_fitting = False
+    body_tracking_parameters.enable_tracking = False
 
     for conf in fusion_configurations:
         print("Try to open ZED", conf.serial_number)
@@ -70,7 +78,8 @@ if __name__ == "__main__":
             
             senders[conf.serial_number] = sl.Camera()
 
-            init_params.set_from_serial_number(conf.serial_number)
+            # init_params.set_from_serial_number(conf.serial_number) # taking out line to read from svo instead
+            
             status = senders[conf.serial_number].open(init_params)
             if status != sl.ERROR_CODE.SUCCESS:
                 print("Error opening the camera", conf.serial_number, status)
@@ -110,7 +119,7 @@ if __name__ == "__main__":
 
     fusion.init(init_fusion_parameters)
         
-    print("Cameras in this configuration: ", len(fusion_configurations))
+    print("Cameras in this configuration : ", len(fusion_configurations))
 
     # warmup
     bodies = sl.Bodies()        
@@ -138,7 +147,7 @@ if __name__ == "__main__":
 
     body_tracking_fusion_params = sl.BodyTrackingFusionParameters()
     body_tracking_fusion_params.enable_tracking = True
-    body_tracking_fusion_params.enable_body_fitting = True
+    body_tracking_fusion_params.enable_body_fitting = False
     
     fusion.enable_body_tracking(body_tracking_fusion_params)
 
@@ -151,16 +160,17 @@ if __name__ == "__main__":
     bodies = sl.Bodies()
     single_bodies = [sl.Bodies]
 
-    while viewer.is_available():
+    while (viewer.is_available()):
         for serial in senders:
             zed = senders[serial]
             if zed.grab() == sl.ERROR_CODE.SUCCESS:
                 zed.retrieve_bodies(bodies)
 
         if fusion.process() == sl.FUSION_ERROR_CODE.SUCCESS:
+            
             # Retrieve detected objects
             fusion.retrieve_bodies(bodies, rt)
-            # For debug, you can retrieve the data sent by each camera, as well as communication and process stats to make sure everything is okay
+            # for debug, you can retrieve the data send by each camera, as well as communication and process stat just to make sure everything is okay
             # for cam in camera_identifiers:
             #     fusion.retrieveBodies(single_bodies, rt, cam); 
             viewer.update_bodies(bodies)
@@ -169,8 +179,3 @@ if __name__ == "__main__":
         senders[sender].close()
         
     viewer.exit()
-
-    # Save body tracking data to JSON
-    bodies_json = bodies.to_json()
-    with open(output_file, "w") as f:
-        f.write(bodies_json)
