@@ -98,7 +98,7 @@ The body_tracking.py script detects human bodies and visualizes their skeletal m
 python body_tracking.py <path_to_localization_file>
 ```
 
-### 8. End of the Script
+### 9. End of the Script
 
 The script will save the body tracking data to a JSON file, and close all cameras. The script will output:
 - A body_tracking.json file with the recorded body tracking data.
