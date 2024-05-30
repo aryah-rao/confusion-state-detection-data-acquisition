@@ -30,6 +30,20 @@ import cv_viewer.tracking_viewer as cv_viewer
 import numpy as np
 import argparse
 import os
+import json
+
+body_json = []
+
+def serialize_body(body, timestamp):
+    return {
+        "id": body.unique_object_id,  # Unique ID of the detected body
+        "ts": timestamp,  # Timestamp of the detection
+        "keypoint": body.keypoint.tolist(),  # List of keypoints (skeleton joints)
+        "keypoint_confidence": body.keypoint_confidence.tolist(),
+        "confidence": body.confidence,  # Confidence level of the detection
+        # "tracking_state": body.tracking_state,
+        # "action_state": body.action_state
+    }
 
 def parse_args(init):
     """
@@ -115,7 +129,7 @@ def main():
     # Set the coordinate units to meters
     init_params.coordinate_units = sl.UNIT.METER
     # Set the depth mode to ULTRA
-    init_params.depth_mode = sl.DEPTH_MODE.ULTRA
+    init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
     # Set the coordinate system to right-handed Y-up
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
     
@@ -177,6 +191,7 @@ def main():
             zed.retrieve_image(image, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
             # Retrieve bodies
             zed.retrieve_bodies(bodies, body_runtime_param)
+            body_json.append([serialize_body(b, bodies.timestamp.get_milliseconds()) for b in bodies.body_list]) 
             # Update GL view
             viewer.update_view(image, bodies) 
             # Update OCV view
@@ -196,6 +211,10 @@ def main():
                 else: 
                     print("Restart")
                     key_wait = 10 
+        else:
+            break
+    with open(os.path.join(opt.folder_path,"body_tracking.json"), "w+") as outfile:
+        json.dump(body_json, outfile)
     # Clean up resources
     viewer.exit()
     image.free(sl.MEM.CPU)
