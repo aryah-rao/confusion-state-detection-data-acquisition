@@ -18,19 +18,13 @@ To run the provided script, ensure you have the following dependencies installed
 ### Clone this repository to your local machine:
 
 ```bash
-git clone https://github.com/aryah-rao/denison-research-summer-24
+git clone -b single-camera https://github.com/aryah-rao/denison-research-summer-24
 ```
 
 ### Install the required dependencies:
 
 Please follow the installation guide provided by Stereolabs to install the latest version of PyZED SDK:
 [PyZED SDK Installation Guide](https://www.stereolabs.com/docs/app-development/python/install)
-
-Install OpenCV using your Linux distro's package manager. For Ubuntu/Debian, this is:
-
-```bash
-sudo apt install libopencv-dev python3-opencv
-```
 
 Install other requirements:
 
@@ -55,37 +49,20 @@ You will be prompted to enter the context:
 Please enter the context for the experiment: my_experiment
 ```
 
-### 2. Calibrate Cameras
-
-The script will automatically start the `ZED360` executable for calibration. Ensure the `ZED360` executable is located in the `./zed-tools/` directory. If not, adjust the path accordingly in the script.
-
-Follow the guide [here](https://www.stereolabs.com/docs/fusion/zed360) to complete calibration.
-
-Save the calibration file in the file path `./experiments/DATE/DATE_CONTEXT/`, where `DATE` is the current date and `CONTEXT` is the context you entered for your experiment.
-
-Example structure:
-```bash
-./experiments/2024-05-21/2024-05-21_my_experiment/calibration.json
-```
-
 ### 6. Recording and Output
 
-Once calibration is complete, close `ZED360`, and then press any key to start recording. The script will begin capturing body tracking data from the connected ZED cameras.
+The script will begin capturing body tracking data from the connected ZED camera.
 
-### 7. Stopping the script:
+To stop the script and save the recorded data, press CTRL+C. The script will handle the shutdown process, save the recorded svo2 file, and close the camera. The script will output:
+- One .svo or .svo2 file.
 
-To stop the script and save the recorded data, press CTRL+C. The script will handle the shutdown process, save the recorded svo2 file(s), and close all cameras. The script will output:
-- One or more .svo files for each camera.
-
-All these files will be saved in the same directory as the calibration file.
+All these files will be saved in the directory structures as this:
 
 Example output:
 
 ```bash
 ./experiments/YY-MM-DD/YY-MM-DD_my_experiment/
-    calibration.json
     YY-MM-DD_12345_my_experiment.svo
-    YY-MM-DD_67890_my_experiment.svo
 ```
 
 ### Body Tracking
@@ -95,23 +72,21 @@ Example output:
 The body_tracking.py script detects human bodies and visualizes their skeletal models. Here, the localization file is the path to the calibration file that is in the same directory as the svo2 files.
 
 ```bash
-python body_tracking.py <path_to_localization_file>
+python body_tracking.py <folder_path>
 ```
 
 ### 9. End of the Script
 
-The script will save the body tracking data to a JSON file, and close all cameras. The script will output:
+The script will save the body tracking data to a JSON file, and close the camera. The script will output:
 - A body_tracking.json file with the recorded body tracking data.
 
-All these files will be saved in the same directory as the calibration file.
+All these files will be saved in the directory structures as this:
 
 Example output:
 
 ```bash
 ./experiments/YY-MM-DD/YY-MM-DD_my_experiment/
-    calibration.json
     YY-MM-DD_12345_my_experiment.svo
-    YY-MM-DD_67890_my_experiment.svo
     body_tracking.json
 ```
 
