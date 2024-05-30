@@ -1,8 +1,8 @@
-# Denison Research Summer 24
+# Human-Robot Interaction Denison Research Summer 24
 
 ## Overview
 
-This repository contains the source code and resources for a research project utilizing Stereolabs AI camera ZED. The project aims to develop a system capable of predicting when a person may require assistance from a robot, focusing on analyzing facial and body movements using computer vision algorithms.
+This repository contains the source code and resources for a research project utilizing Stereolabs AI camera ZED. The project aims to develop a system capable of predicting when a person may require assistance from a robot, focusing on analyzing facial and body movements using computer vision algorithms. 
 
 ## Prerequisites
 
@@ -13,19 +13,15 @@ To run the provided script, ensure you have the following dependencies installed
 - zed-tools: This includes `zed360` for camera calibration.
 - Other dependencies specified in `requirements.txt`.
 
-### Installing PyZED SDK
-
-
-
 ## Setup
 
-### 1. Clone this repository to your local machine:
+### Clone this repository to your local machine:
 
 ```bash
 git clone https://github.com/aryah-rao/denison-research-summer-24
 ```
 
-### 2. Install the required dependencies:
+### Install the required dependencies:
 
 Please follow the installation guide provided by Stereolabs to install the latest version of PyZED SDK:
 [PyZED SDK Installation Guide](https://www.stereolabs.com/docs/app-development/python/install)
@@ -44,12 +40,14 @@ pip install -r requirements.txt
 
 ## Usage
 
-### 3. Run the Script
+### Recording
 
-Run the `body_tracking_fused_cameras.py` script and enter `CONTEXT` to create a unique folder and identiy the experiment.
+### 1. Run the Script
+
+Run the `recording.py` script and enter `CONTEXT` to create a unique folder and identiy the experiment.
 
 ```bash
-python body_tracking_fused_cameras.py
+python recording.py
 ```
 
 You will be prompted to enter the context:
@@ -57,7 +55,7 @@ You will be prompted to enter the context:
 Please enter the context for the experiment: my_experiment
 ```
 
-### 4. Calibrate Cameras
+### 2. Calibrate Cameras
 
 The script will automatically start the `ZED360` executable for calibration. Ensure the `ZED360` executable is located in the `./zed-tools/` directory. If not, adjust the path accordingly in the script.
 
@@ -76,8 +74,33 @@ Once calibration is complete, close `ZED360`, and then press any key to start re
 
 ### 7. Stopping the script:
 
-To stop the script and save the recorded data, press CTRL+C. The script will handle the shutdown process, save the body tracking data to a JSON file, and close all cameras. The script will output:
+To stop the script and save the recorded data, press CTRL+C. The script will handle the shutdown process, save the recorded svo2 file(s), and close all cameras. The script will output:
 - One or more .svo files for each camera.
+
+All these files will be saved in the same directory as the calibration file.
+
+Example output:
+
+```bash
+./experiments/YY-MM-DD/YY-MM-DD_my_experiment/
+    calibration.json
+    YY-MM-DD_12345_my_experiment.svo
+    YY-MM-DD_67890_my_experiment.svo
+```
+
+### Body Tracking
+
+### 8. Run the Script
+
+The body_tracking.py script detects human bodies and visualizes their skeletal models. Here, the localization file is the path to the calibration file that is in the same directory as the svo2 files.
+
+```bash
+python body_tracking.py <path_to_localization_file>
+```
+
+### 8. End of the Script
+
+The script will save the body tracking data to a JSON file, and close all cameras. The script will output:
 - A body_tracking.json file with the recorded body tracking data.
 
 All these files will be saved in the same directory as the calibration file.
@@ -87,9 +110,9 @@ Example output:
 ```bash
 ./experiments/YY-MM-DD/YY-MM-DD_my_experiment/
     calibration.json
-    body_tracking.json
     YY-MM-DD_12345_my_experiment.svo
     YY-MM-DD_67890_my_experiment.svo
+    body_tracking.json
 ```
 
 ### Notes
