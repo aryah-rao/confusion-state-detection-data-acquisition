@@ -19,193 +19,201 @@
 ########################################################################
 
 """
-   This sample shows how to detect a human bodies and draw their 
-   modelised skeleton in an OpenGL window
+   This sample shows how to detect human bodies and draw their 
+   modelled skeleton in an OpenGL window
 """
 import cv2
 import sys
 import pyzed.sl as sl
-import time
 import ogl_viewer.viewer as gl
+import cv_viewer.tracking_viewer as cv_viewer
 import numpy as np
+import argparse
+import os
+
+def parse_args(init):
+    """
+    Parse command line arguments and set initial parameters for the ZED camera
+
+    Args:
+        init (sl.InitParameters): The initialization parameters for the ZED camera
+    """
+    # Check if a folder path was specified
+    if len(opt.folder_path) > 0:
+        # Get a list of all files in the folder that end with .svo2 or .svo
+        svo_files = [f for f in os.listdir(opt.folder_path) if f.endswith(".svo2") or f.endswith(".svo")]
+        
+        # If there is at least one SVO file in the folder
+        if svo_files:
+            # Get the first SVO file in the folder
+            svo_file_path = os.path.join(opt.folder_path, svo_files[0])
+            
+            # Set the initialization parameters to use the SVO file as input
+            init.set_from_svo_file(svo_file_path)
+            print("[Sample] Using SVO File input: {0}".format(svo_file_path))
+        else:
+            print("No SVO files found in the specified folder. Using live stream")
+    # Check if an IP address was specified
+    elif len(opt.ip_address) > 0:
+        # Get the IP address specified by the user
+        ip_str = opt.ip_address
+        
+        # Check if the IP address is in the format of "xxx.xxx.xxx.xxx:xxxx" where x is a digit and the second part is a number between 0 and 65535
+        if ip_str.replace(':','').replace('.','').isdigit() and len(ip_str.split('.')) == 4 and len(ip_str.split(':')) == 2:
+            # Split the IP address and port and set the initialization parameters to use the stream as input
+            init.set_from_stream(ip_str.split(':')[0], int(ip_str.split(':')[1]))
+            print("[Sample] Using Stream input, IP : ", ip_str)
+        # Check if the IP address is in the format of "xxx.xxx.xxx.xxx" where x is a digit
+        elif ip_str.replace(':','').replace('.','').isdigit() and len(ip_str.split('.')) == 4:
+            # Set the initialization parameters to use the stream as input
+            init.set_from_stream(ip_str)
+            print("[Sample] Using Stream input, IP : ", ip_str)
+        else:
+            print("Invalid IP format. Using live stream")
+    # Check if a specific resolution was specified
+    if "HD2K" in opt.resolution:
+        # Set the camera resolution to HD2K
+        init.camera_resolution = sl.RESOLUTION.HD2K
+        print("[Sample] Using Camera in resolution HD2K")
+    elif "HD1200" in opt.resolution:
+        # Set the camera resolution to HD1200
+        init.camera_resolution = sl.RESOLUTION.HD1200
+        print("[Sample] Using Camera in resolution HD1200")
+    elif "HD1080" in opt.resolution:
+        # Set the camera resolution to HD1080
+        init.camera_resolution = sl.RESOLUTION.HD1080
+        print("[Sample] Using Camera in resolution HD1080")
+    elif "HD720" in opt.resolution:
+        # Set the camera resolution to HD720
+        init.camera_resolution = sl.RESOLUTION.HD720
+        print("[Sample] Using Camera in resolution HD720")
+    elif "SVGA" in opt.resolution:
+        # Set the camera resolution to SVGA
+        init.camera_resolution = sl.RESOLUTION.SVGA
+        print("[Sample] Using Camera in resolution SVGA")
+    elif "VGA" in opt.resolution:
+        # Set the camera resolution to VGA
+        init.camera_resolution = sl.RESOLUTION.VGA
+        print("[Sample] Using Camera in resolution VGA")
+    elif len(opt.resolution) > 0: 
+        print("[Sample] No valid resolution entered. Using default")
+    else: 
+        print("[Sample] Using default resolution")
+
 
 def main():
-    # Check if the required localization file is provided
-    if len(sys.argv) < 2:
-        print("This sample display the fused body tracking of multiple cameras.")
-        print("It needs a Localization file in input. Generate it with ZED 360.")
-        print("The cameras can either be plugged to your devices, or already running on the local network.")
-        exit(1)
+    # Print a message to indicate that the Body Tracking sample is running
+    print("Running Body Tracking sample ... Press 'q' to quit, or 'm' to pause or restart")
 
-    # Read the localization file
-    filepath = sys.argv[1]
-    fusion_configurations = sl.read_fusion_configuration_file(filepath, sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP, sl.UNIT.METER)
-    if len(fusion_configurations) <= 0:
-        print("Invalid file.")
-        exit(1)
+    # Create a Camera object
+    zed = sl.Camera()
 
-    # Initialize the camera senders dictionary
-    senders = {}
-    network_senders = {}
-
-    # Initialize the common parameters
+    # Create a InitParameters object and set configuration parameters
     init_params = sl.InitParameters()
-    init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
-    init_params.coordinate_units = sl.UNIT.METER
-    init_params.depth_mode = sl.DEPTH_MODE.ULTRA
+    # Set the camera video mode to HD1080
     init_params.camera_resolution = sl.RESOLUTION.HD1080
+    # Set the coordinate units to meters
+    init_params.coordinate_units = sl.UNIT.METER
+    # Set the depth mode to ULTRA
+    init_params.depth_mode = sl.DEPTH_MODE.ULTRA
+    # Set the coordinate system to right-handed Y-up
+    init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
+    
+    # Parse command line arguments and set initialization parameters
+    parse_args(init_params)
 
-    # Set the communication parameters
-    communication_parameters = sl.CommunicationParameters()
-    communication_parameters.set_for_shared_memory()
+    # Open the camera
+    err = zed.open(init_params)
+    # If the camera cannot be opened, exit the program
+    if err != sl.ERROR_CODE.SUCCESS:
+        exit(1)
 
-    # Set the positional tracking parameters
+    # Enable Positional tracking (mandatory for object detection)
     positional_tracking_parameters = sl.PositionalTrackingParameters()
-    positional_tracking_parameters.set_as_static = True
-
-    # Set the body tracking parameters
-    body_tracking_parameters = sl.BodyTrackingParameters()
-    body_tracking_parameters.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_ACCURATE
-    body_tracking_parameters.body_format = sl.BODY_FORMAT.BODY_18
-    body_tracking_parameters.enable_body_fitting = False
-    body_tracking_parameters.enable_tracking = False
-
-    # Open each camera based on the localization configuration
-    for conf in fusion_configurations:
-        print("Trying to open ZED", conf.serial_number)
-        init_params.input = sl.InputType()
-
-        # If the camera is already running on the local network
-        if conf.communication_parameters.comm_type == sl.COMM_TYPE.LOCAL_NETWORK:
-            network_senders[conf.serial_number] = conf.serial_number
-
-        # If the camera is connected to the device
-        else:
-            init_params.input = conf.input_type
-            
-            # Create a ZED camera object
-            senders[conf.serial_number] = sl.Camera()
-
-            # Open the camera
-            status = senders[conf.serial_number].open(init_params)
-            if status != sl.ERROR_CODE.SUCCESS:
-                print("Error opening the camera", conf.serial_number, status)
-                del senders[conf.serial_number]
-                continue
-
-            # Enable the positional tracking
-            status = senders[conf.serial_number].enable_positional_tracking(positional_tracking_parameters)
-            if status != sl.ERROR_CODE.SUCCESS:
-                print("Error enabling the positional tracking of camera", conf.serial_number)
-                del senders[conf.serial_number]
-                continue
-
-            # Enable the body tracking
-            status = senders[conf.serial_number].enable_body_tracking(body_tracking_parameters)
-            if status != sl.ERROR_CODE.SUCCESS:
-                print("Error enabling the body tracking of camera", conf.serial_number)
-                del senders[conf.serial_number]
-                continue
-
-            # Start publishing the camera data
-            senders[conf.serial_number].start_publishing(communication_parameters)
-
-        print("Camera", conf.serial_number, "is open")
+    # If the camera is static, uncomment the following line to have better performances
+    # positional_tracking_parameters.set_as_static = True
+    # Enable Positional tracking
+    zed.enable_positional_tracking(positional_tracking_parameters)
     
-    # Check if enough cameras are connected
-    if len(senders) + len(network_senders) < 1:
-        print("No enough cameras")
-        exit(1)
+    # Create BodyTrackingParameters object and set configuration parameters
+    body_param = sl.BodyTrackingParameters()
+    # Enable tracking of people across images flow
+    body_param.enable_tracking = True
+    # Disable smooth skeleton movement
+    body_param.enable_body_fitting = False
+    # Set the body detection model to HUMAN_BODY_FAST
+    body_param.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_FAST 
+    # Choose the BODY_FORMAT to use
+    body_param.body_format = sl.BODY_FORMAT.BODY_18 
 
-    print("Senders started, running the fusion...")
-        
-    # Initialize the fusion parameters
-    init_fusion_parameters = sl.InitFusionParameters()
-    init_fusion_parameters.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
-    init_fusion_parameters.coordinate_units = sl.UNIT.METER
-    init_fusion_parameters.output_performance_metrics = False
-    init_fusion_parameters.verbose = True
+    # Enable Object Detection module
+    zed.enable_body_tracking(body_param)
 
-    # Set the communication parameters for fusion
-    communication_parameters = sl.CommunicationParameters()
-    
-    # Create a fusion object
-    fusion = sl.Fusion()
-    
-    # Initialize the fusion
-    fusion.init(init_fusion_parameters)
-        
-    print("Cameras in this configuration : ", len(fusion_configurations))
+    # Create BodyTrackingRuntimeParameters object and set configuration parameters
+    body_runtime_param = sl.BodyTrackingRuntimeParameters()
+    # Set the detection confidence threshold
+    body_runtime_param.detection_confidence_threshold = 40
 
-    # Warm-up the camera data
-    bodies = sl.Bodies()        
-    for serial in senders:
-        zed = senders[serial]
-        if zed.grab() == sl.ERROR_CODE.SUCCESS:
-            zed.retrieve_bodies(bodies)
+    # Get ZED camera information
+    camera_info = zed.get_camera_information()
+    # Calculate the display resolution based on the camera resolution and a maximum of 1280x720
+    display_resolution = sl.Resolution(min(camera_info.camera_configuration.resolution.width, 1280), min(camera_info.camera_configuration.resolution.height, 720))
+    # Calculate the image scale based on the display resolution and the camera resolution
+    image_scale = [display_resolution.width / camera_info.camera_configuration.resolution.width
+                 , display_resolution.height / camera_info.camera_configuration.resolution.height]
 
-    # Subscribe each camera to the fusion
-    camera_identifiers = []
-    for i in range(0, len(fusion_configurations)):
-        conf = fusion_configurations[i]
-        uuid = sl.CameraIdentifier()
-        uuid.serial_number = conf.serial_number
-        print("Subscribing to", conf.serial_number, conf.communication_parameters.comm_type)
-
-        # Subscribe the camera to the fusion
-        status = fusion.subscribe(uuid, conf.communication_parameters, conf.pose)
-        if status != sl.FUSION_ERROR_CODE.SUCCESS:
-            print("Unable to subscribe to", uuid.serial_number, status)
-        else:
-            camera_identifiers.append(uuid)
-            print("Subscribed.")
-
-    # Check if any camera is connected
-    if len(camera_identifiers) <= 0:
-        print("No camera connected.")
-        exit(1)
-
-    # Enable the body tracking in the fusion
-    body_tracking_fusion_params = sl.BodyTrackingFusionParameters()
-    body_tracking_fusion_params.enable_tracking = True
-    body_tracking_fusion_params.enable_body_fitting = False
-    
-    fusion.enable_body_tracking(body_tracking_fusion_params)
-
-    # Set the runtime parameters for the body tracking fusion
-    rt = sl.BodyTrackingFusionRuntimeParameters()
-    rt.skeleton_minimum_allowed_keypoints = 7
-    
-    # Create the OpenGL viewer
+    # Create OpenGL viewer
     viewer = gl.GLViewer()
-    viewer.init()
-
-    # Create the objects to store the bodies
+    # Initialize the OpenGL viewer with the camera calibration parameters, body tracking enabled, and the chosen BODY_FORMAT
+    viewer.init(camera_info.camera_configuration.calibration_parameters.left_cam, body_param.enable_tracking, body_param.body_format)
+    # Create ZED objects filled in the main loop
     bodies = sl.Bodies()
-    single_bodies = [sl.Bodies]
-
-    # Main loop to retrieve and display the bodies
-    while (viewer.is_available()):
-        for serial in senders:
-            zed = senders[serial]
-            if zed.grab() == sl.ERROR_CODE.SUCCESS:
-                zed.retrieve_bodies(bodies)
-
-        # Process the fusion
-        if fusion.process() == sl.FUSION_ERROR_CODE.SUCCESS:
-            
-            # Retrieve the detected bodies
-            fusion.retrieve_bodies(bodies, rt)
-            
-            # Update the viewer with the bodies
-            viewer.update_bodies(bodies)
-            
-    # Close the camera objects
-    for sender in senders:
-        senders[sender].close()
-        
-    # Exit the viewer
+    image = sl.Mat()
+    key_wait = 10 
+    while viewer.is_available():
+        # Grab an image
+        if zed.grab() == sl.ERROR_CODE.SUCCESS:
+            # Retrieve left image
+            zed.retrieve_image(image, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
+            # Retrieve bodies
+            zed.retrieve_bodies(bodies, body_runtime_param)
+            # Update GL view
+            viewer.update_view(image, bodies) 
+            # Update OCV view
+            image_left_ocv = image.get_data()
+            cv_viewer.render_2D(image_left_ocv, image_scale, bodies.body_list, body_param.enable_tracking, body_param.body_format)
+            cv2.imshow("ZED | 2D View", image_left_ocv)
+            key = cv2.waitKey(key_wait)
+            # If 'q' key is pressed, exit the program
+            if key == 113: 
+                print("Exiting...")
+                break
+            # If 'm' key is pressed, pause or restart the program
+            if key == 109: 
+                if key_wait > 0:
+                    print("Pause")
+                    key_wait = 0 
+                else: 
+                    print("Restart")
+                    key_wait = 10 
+    # Clean up resources
     viewer.exit()
-
-if __name__ == "__main__":
-    main()
+    image.free(sl.MEM.CPU)
+    # Disable body tracking and positional tracking
+    zed.disable_body_tracking()
+    zed.disable_positional_tracking()
+    # Close the camera
+    zed.close()
+    # Close the OpenCV window
+    cv2.destroyAllWindows()
+    
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--folder_path', type=str, help='Path to a folder containing .svo or .svo2 files', default='')
+    parser.add_argument('--ip_address', type=str, help='IP Address, in format a.b.c.d:port or a.b.c.d, if you have a streaming setup', default = '')
+    parser.add_argument('--resolution', type=str, help='Resolution, can be either HD2K, HD1200, HD1080, HD720, SVGA or VGA', default = '')
+    opt = parser.parse_args()
+    if len(opt.folder_path) > 0 and len(opt.ip_address) > 0:
+        print("Specify only folder_path or ip_address, or none to use wired camera, not both. Exit program")
+        exit()
+    main() 

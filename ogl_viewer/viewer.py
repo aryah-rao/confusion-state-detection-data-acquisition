@@ -2,6 +2,7 @@ from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
 from threading import Lock
+from cv_viewer.utils import *
 import numpy as np
 import sys
 import array
@@ -9,30 +10,6 @@ import math
 import ctypes
 import pyzed.sl as sl
 M_PI = 3.1415926
-
-
-ID_COLORS = [(232, 176,59)
-            ,(175, 208,25)
-            ,(102, 205,105)
-            ,(185, 0,255)
-            ,(99, 107,252)]
-
-def render_object(object_data, is_tracking_on):
-    if is_tracking_on:
-        return (object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK)
-    else:
-        return ((object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK) or (object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF))
-        
-
-def generate_color_id_u(idx):
-    arr = []
-    if(idx < 0):
-        arr = [236,184,36,255]
-    else:
-        color_idx = idx % 5
-        arr = [ID_COLORS[color_idx][0], ID_COLORS[color_idx][1], ID_COLORS[color_idx][2], 255]
-    return arr
-
 
 SK_SPHERE_SHADER = """
 # version 330 core
@@ -137,11 +114,11 @@ class Simple3DObject:
     """
     Class that manages simple 3D objects to render with OpenGL
     """
-    def __init__(self, _isStatic):
+    def __init__(self, _is_static):
         self.vaoID = 0
         self.drawing_type = GL_TRIANGLES
+        self.is_static = _is_static
         self.elementbufferSize = 0
-        self.isStatic = _isStatic
         self.is_init = False
 
         self.vertices = array.array('f')
@@ -249,22 +226,18 @@ class Simple3DObject:
         if( self.is_init == False):
             self.vboID = glGenBuffers(3)
             self.is_init = True
-        
-        draw_type = GL_DYNAMIC_DRAW
-        if self.isStatic:
-            draw_type = GL_STATIC_DRAW
 
         if len(self.vertices):
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[0])
-            glBufferData(GL_ARRAY_BUFFER, len(self.vertices) * self.vertices.itemsize, (GLfloat * len(self.vertices))(*self.vertices), draw_type)         
+            glBufferData(GL_ARRAY_BUFFER, len(self.vertices) * self.vertices.itemsize, (GLfloat * len(self.vertices))(*self.vertices), GL_STATIC_DRAW)         
         
         if len(self.normals):
             glBindBuffer(GL_ARRAY_BUFFER, self.vboID[1])
-            glBufferData(GL_ARRAY_BUFFER, len(self.normals) * self.normals.itemsize, (GLfloat * len(self.normals))(*self.normals), draw_type)
+            glBufferData(GL_ARRAY_BUFFER, len(self.normals) * self.normals.itemsize, (GLfloat * len(self.normals))(*self.normals), GL_STATIC_DRAW)
 
         if len(self.indices):
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, self.vboID[2])
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER,len(self.indices) * self.indices.itemsize,(GLuint * len(self.indices))(*self.indices), draw_type)
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER,len(self.indices) * self.indices.itemsize,(GLuint * len(self.indices))(*self.indices), GL_STATIC_DRAW)
             
         self.elementbufferSize = len(self.indices)
 
@@ -293,11 +266,12 @@ class Simple3DObject:
             glDisableVertexAttribArray(1)
 
 class Skeleton:
-    def __init__(self):
+    def __init__(self, _body_format = sl.BODY_FORMAT.BODY_18):
         self.clr = [0,0,0,1]
         self.kps = []
         self.joints = Simple3DObject(False)
         self.Z = 1
+        self.body_format = _body_format
 
     def createSk(self, obj, BODY_PARTS, BODY_BONES):
         for bone in BODY_BONES:
@@ -305,7 +279,7 @@ class Skeleton:
             kp_2 = obj.keypoint[bone[1].value]
             if math.isfinite(kp_1[0]) and math.isfinite(kp_2[0]):
                 self.joints.add_line(kp_1, kp_2)
-    
+
         for part in range(len(BODY_PARTS)-1):    # -1 to avoid LAST
             kp = obj.keypoint[part]
             norm = np.linalg.norm(kp)
@@ -317,21 +291,21 @@ class Skeleton:
         self.clr = generate_color_id(obj.id)
         self.Z = abs(obj.position[2])
         # Draw skeletons
-        kpt_size = obj.keypoint.size
-        
-        if kpt_size == 18*3:
-            self.createSk(obj, sl.BODY_18_PARTS, sl.BODY_18_BONES)
-        elif kpt_size == 34*3:
-            self.createSk(obj, sl.BODY_34_PARTS, sl.BODY_34_BONES)
-        elif kpt_size == 38*3:
-            self.createSk(obj, sl.BODY_38_PARTS, sl.BODY_38_BONES)
-    
+        if obj.keypoint.size > 0:
+            if self.body_format == sl.BODY_FORMAT.BODY_18:
+                self.createSk(obj, sl.BODY_18_PARTS, sl.BODY_18_BONES)
+            elif self.body_format == sl.BODY_FORMAT.BODY_34:
+                self.createSk(obj, sl.BODY_34_PARTS, sl.BODY_34_BONES)
+            elif self.body_format == sl.BODY_FORMAT.BODY_38:
+                self.createSk(obj, sl.BODY_38_PARTS, sl.BODY_38_BONES)
+
     def push_to_GPU(self):
         self.joints.push_to_GPU()
 
-    def draw(self, shader_sk_clr):
+    def draw(self, shader_sk_clr, sphere, shader_mvp, projection):
         glUniform4f(shader_sk_clr, self.clr[0],self.clr[1],self.clr[2],self.clr[3])
-        glLineWidth((20. / self.Z))
+        line_w = (20. / self.Z)
+        glLineWidth(line_w)
         self.joints.draw()
 
     def drawKPS(self, shader_clr, sphere, shader_pt):
@@ -444,8 +418,11 @@ class GLViewer:
         # Create the rendering camera
         self.projection = array.array('f')
         self.basic_sphere = Simple3DObject(True)
+        # Show tracked objects only
+        self.is_tracking_on = False
+        self.body_format = sl.BODY_FORMAT.BODY_18
 
-    def init(self): 
+    def init(self, _params, _is_tracking_on, _body_format): 
         glutInit()
         wnd_w = glutGet(GLUT_SCREEN_WIDTH)
         wnd_h = glutGet(GLUT_SCREEN_HEIGHT)
@@ -455,10 +432,11 @@ class GLViewer:
         glutInitWindowSize(width, height)
         glutInitWindowPosition((int)(wnd_w*0.05), (int)(wnd_h*0.05)) # The window opens at the upper left corner of the screen
         glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB)
-        glutCreateWindow("ZED Fusion Body Tracking")
+        glutCreateWindow("ZED Body Tracking")
         glViewport(0, 0, width, height)
 
-        glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_CONTINUE_EXECUTION)
+        glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE,
+                      GLUT_ACTION_CONTINUE_EXECUTION)
 
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -479,9 +457,11 @@ class GLViewer:
         self.shader_sphere_clr = glGetUniformLocation(self.shader_sphere_image.get_program_id(), "u_color")
         self.shader_sphere_pt = glGetUniformLocation(self.shader_sphere_image.get_program_id(), "u_pt")
 
-        self.set_render_camera_projection(60, 0.1, 200)
+        self.set_render_camera_projection(_params, 0.1, 200)
 
         self.floor_plane_set = False
+
+        self.is_tracking_on = _is_tracking_on
 
         self.basic_sphere.add_sphere()        
         self.basic_sphere.set_drawing_type(GL_QUADS)
@@ -497,29 +477,27 @@ class GLViewer:
         glutCloseFunc(self.close_func)
 
         self.available = True
+        self.body_format = _body_format
 
     def set_floor_plane_equation(self, _eq):
         self.floor_plane_set = True
         self.floor_plane_eq = _eq
 
-    def set_render_camera_projection(self, fov, _znear, _zfar):
+    def set_render_camera_projection(self, _params, _znear, _zfar):
         # Just slightly move up the ZED camera FOV to make a small black border
-        fov_y = (fov + 0.5) * M_PI / 180
-        fov_x = (fov + 0.5) * M_PI / 180
-
-        im_w = 1280
-        im_h = 720
+        fov_y = (_params.v_fov + 0.5) * M_PI / 180
+        fov_x = (_params.h_fov + 0.5) * M_PI / 180
 
         self.projection.append( 1 / math.tan(fov_x * 0.5) )  # Horizontal FoV.
         self.projection.append( 0)
         # Horizontal offset.
-        self.projection.append( 2 * ((im_w * 0.5) / im_w) - 1)
+        self.projection.append( 2 * ((_params.image_size.width - _params.cx) / _params.image_size.width) - 1)
         self.projection.append( 0)
 
         self.projection.append( 0)
         self.projection.append( 1 / math.tan(fov_y * 0.5))  # Vertical FoV.
         # Vertical offset.
-        self.projection.append(-(2 * ((im_h * 0.5) / im_h) - 1))
+        self.projection.append(-(2 * ((_params.image_size.height - _params.cy) / _params.image_size.height) - 1))
         self.projection.append( 0)
 
         self.projection.append( 0)
@@ -540,15 +518,21 @@ class GLViewer:
             glutMainLoopEvent()
         return self.available
 
-    def update_bodies(self, _bodies):       # _objs of type sl.Bodies
+    def render_object(self, _object_data):      # _object_data of type sl.ObjectData
+        if self.is_tracking_on:
+            return (_object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK)
+        else:
+            return (_object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OK or _object_data.tracking_state == sl.OBJECT_TRACKING_STATE.OFF)
+
+    def update_view(self, _image, _bodies):       # _objs of type sl.Bodies
         self.mutex.acquire()
 
         # Clear objects
         self.bodies.clear()
         # Only show tracked objects
         for _body in _bodies.body_list:
-            if render_object(_body, _bodies.is_tracked):
-                current_sk = Skeleton()
+            if self.render_object(_body):
+                current_sk = Skeleton(self.body_format)
                 current_sk.set(_body)
                 self.bodies.append(current_sk)
         self.mutex.release()
@@ -591,7 +575,7 @@ class GLViewer:
         
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
         for body in self.bodies:
-            body.draw(self.shader_sphere_clr)
+            body.draw(self.shader_sphere_clr, self.basic_sphere, self.shader_sphere_MVP, self.projection)
         glUseProgram(0)
 
         glUseProgram(self.shader_sphere_image.get_program_id())
