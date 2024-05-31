@@ -154,11 +154,11 @@ def main():
     if opt.mode == 4:
         app_type = AppType.LEFT_AND_DEPTH_16
 
-    # Extract the current folder name from the folder_path
+    # Get the file paths
     current_folder_name = os.path.basename(folder_path)
-
-    # Construct the output AVI file path
     output_avi_path = os.path.join(folder_path, f"{current_folder_name}.avi")
+    audio_file_path = os.path.join(folder_path, "audio_recording.wav")
+    output_final_video_path = os.path.join(folder_path, f"{current_folder_name}_with_audio.mp4")
 
     # Calculate average frame rate based on the first SVO file
     # The average frame rate is used to set the frame rate of the output AVI file
@@ -263,6 +263,27 @@ def main():
         zed.close()
 
     print("\nConversion completed.")
+    
+    # Combine the AVI file with the WAV file
+    if os.path.exists(audio_file_path):
+        ffmpeg_command = [
+            "ffmpeg",
+            "-i", output_avi_path,
+            "-i", audio_file_path,
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-map", "0:v:0",
+            "-map", "1:a:0",
+            output_final_video_path
+        ]
+
+        result = subprocess.run(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print(result.stdout.decode())
+        print(result.stderr.decode())
+        print("AVI and WAV files combined successfully.")
+    else:
+        print(f"Audio file not found at {audio_file_path}. Skipping audio merging.")
+
     return 0
 
 if __name__ == "__main__":
