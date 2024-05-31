@@ -25,9 +25,8 @@
 """
 import os
 import datetime
-import cv2
 import sys
-import pyzed.sl as sl
+import pyzed.sl as sl # type: ignore
 import time
 import ogl_viewer.viewer as gl
 import numpy as np
