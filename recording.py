@@ -35,6 +35,7 @@ import subprocess  # To run the executable
 zcameras = []  # List to keep track of active cameras
 # body_json = []  # List to store serialized body tracking data
 experiment_folder = ""  # Global variable to store the experiment folder path
+audio_process = None  # Global variable to store the audio recording process
 
 # Handler to deal with CTRL+C (SIGINT) signal properly
 def handler(signal_received, frame):
@@ -43,30 +44,32 @@ def handler(signal_received, frame):
     It performs the following steps:
     1. Disable recording for each active camera.
     2. Close each active camera.
-    3. Update the calibration.json file with the new data.
-    4. Exit the program.
+    3. Stop audio recording.
+    4. Update the calibration.json file with the new data.
+    5. Exit the program.
     """
-    global zcameras, experiment_folder
-    
+    global zcameras, experiment_folder, audio_process
+
     # Print a message to inform that the program is receiving the signal
     print("got sigint, shutting cameras")
-    
+
     # Iterate over each active camera
     for cam in zcameras:
-        
         # Disable recording for each camera
         cam.disable_recording()
-        
         # Close each camera
         cam.close()
-    
+
+    # Stop audio recording
+    stop_audio_recording()
+
     # Update the calibration.json file
     # This function updates the calibration.json file with the new data
     update_calibration(experiment_folder)
-    
+
     # Print a message to inform that the program is exiting
     print("exiting")
-    
+
     # Exit the program
     sys.exit(0)
 
@@ -158,7 +161,6 @@ def run_calibration(experiment_folder):
     
     # Return the fusion configurations
     return fusion_configurations
-    return fusion_configurations
 
 # Function to update calibration.json at the end to run body_tracking later
 def update_calibration(experiment_folder):
@@ -203,6 +205,28 @@ def update_calibration(experiment_folder):
     # Print a message to indicate that the calibration.json file has been updated successfully
     print("Calibration JSON file updated successfully.")
 
+def start_audio_recording(output_file):
+    """
+    Start recording audio using arecord.
+
+    Args:
+        output_file (str): The path to the output audio file.
+    """
+    global audio_process
+    command = ["arecord", "-f", "cd", "-t", "wav", output_file]
+    audio_process = subprocess.Popen(command)
+    print("Audio recording started...")
+
+def stop_audio_recording():
+    """
+    Stop the audio recording.
+    """
+    global audio_process
+    if audio_process:
+        audio_process.terminate()
+        audio_process.wait()
+        print("Audio recording stopped.")
+
 # Main function
 def main():
     """
@@ -217,8 +241,9 @@ def main():
     8. Initializes the fusion object.
     9. Subscribes to each camera in the fusion configuration.
     10. Enables recording for each local camera.
-    11. Starts the main loop to grab and process body tracking data.
-    12. Closes each camera when the loop is exited.
+    11. Starts the audio recording.
+    12. Starts the main loop to grab and process body tracking data.
+    13. Closes each camera and stops the audio recording when the loop is exited.
     """
     # Initialize global variables
     global zcameras, experiment_folder
@@ -328,6 +353,10 @@ def main():
         print('both cameras recording')
         if zed.grab() == sl.ERROR_CODE.SUCCESS:
             pass
+
+    # Start audio recording
+    audio_filename = os.path.join(experiment_folder, "audio_recording.wav")
+    start_audio_recording(audio_filename)
 
     # Subscribe to each camera in the fusion configuration
     for i in range(0, len(fusion_configurations)):
