@@ -8,6 +8,7 @@ import argparse
 import os
 import time
 import json
+import subprocess
 
 # Function to display a progress bar in the console
 def progress_bar(current, total, bar_length=50):
@@ -141,9 +142,11 @@ def main():
     # Set the app type to LEFT_AND_RIGHT
     app_type = AppType.LEFT_AND_RIGHT
 
-    # Get the name of the current folder and construct the output AVI file path
+    # Get the file paths
     current_folder_name = os.path.basename(folder_path)
     output_avi_path = os.path.join(folder_path, f"{current_folder_name}.avi")
+    audio_file_path = os.path.join(folder_path, "audio_recording.wav")
+    output_final_video_path = os.path.join(folder_path, f"{current_folder_name}_with_audio.mp4")
 
     # Calculate the average frame rate of the SVO file
     average_frame_rate = calculate_average_frame_rate(str(svo_path))
@@ -246,6 +249,27 @@ def main():
 
     # Print a completion message
     print("\nConversion completed.")
+    
+    # Combine the AVI file with the WAV file
+    if os.path.exists(audio_file_path):
+        ffmpeg_command = [
+            "ffmpeg",
+            "-i", output_avi_path,
+            "-i", audio_file_path,
+            "-c:v", "copy",
+            "-c:a", "aac",
+            "-map", "0:v:0",
+            "-map", "1:a:0",
+            "-shortest",
+            output_final_video_path
+        ]
+
+        result = subprocess.run(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print(result.stdout.decode())
+        print(result.stderr.decode())
+        print("AVI and WAV files combined successfully.")
+    else:
+        print(f"Audio file not found at {audio_file_path}. Skipping audio merging.")
     return 0
 
 if __name__ == "__main__":
