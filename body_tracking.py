@@ -90,9 +90,9 @@ def main():
     # Set the body tracking parameters
     body_tracking_parameters = sl.BodyTrackingParameters()
     body_tracking_parameters.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_ACCURATE
-    body_tracking_parameters.body_format = sl.BODY_FORMAT.BODY_18
-    body_tracking_parameters.enable_body_fitting = False
-    body_tracking_parameters.enable_tracking = False
+    body_tracking_parameters.body_format = sl.BODY_FORMAT.BODY_34
+    body_tracking_parameters.enable_body_fitting = True
+    body_tracking_parameters.enable_tracking = True
 
     # Open each camera based on the localization configuration
     for conf in fusion_configurations:
@@ -192,7 +192,7 @@ def main():
     # Enable the body tracking in the fusion
     body_tracking_fusion_params = sl.BodyTrackingFusionParameters()
     body_tracking_fusion_params.enable_tracking = True
-    body_tracking_fusion_params.enable_body_fitting = False
+    body_tracking_fusion_params.enable_body_fitting = True
     
     fusion.enable_body_tracking(body_tracking_fusion_params)
 
@@ -208,11 +208,14 @@ def main():
     bodies = sl.Bodies()
 
     # Main loop to retrieve and display the bodies
+#    while True:
     while (viewer.is_available()):
         for serial in senders:
             zed = senders[serial]
             if zed.grab() == sl.ERROR_CODE.SUCCESS:
                 zed.retrieve_bodies(bodies)
+            elif zed.grab() == sl.ERROR_CODE.END_OF_SVOFILE_REACHED:
+                break
 
         # Process the fusion
         if fusion.process() == sl.FUSION_ERROR_CODE.SUCCESS:
@@ -224,10 +227,10 @@ def main():
             viewer.update_bodies(bodies)
 
             # Serialize body tracking data
-#            for body in bodies.body_list:
-#                body_json.append(serialize_body(body, fusion.get_timestamp(sl.TIME_REFERENCE.CURRENT).get_milliseconds()))
-#        else:
-#            break
+            body_json.append([serialize_body(b, bodies.timestamp.get_milliseconds()) for b in bodies.body_list])  # Serialize and store body tracking data
+
+        elif zed.grab() == sl.ERROR_CODE.END_OF_SVOFILE_REACHED:
+            break
         
     # Save the body tracking data to a JSON file
     output_filepath = os.path.join(opt.folder_path, "body_tracking.json")
