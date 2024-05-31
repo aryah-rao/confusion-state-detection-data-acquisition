@@ -260,7 +260,6 @@ def main():
             "-c:a", "aac",
             "-map", "0:v:0",
             "-map", "1:a:0",
-            "-shortest",
             output_final_video_path
         ]
 
