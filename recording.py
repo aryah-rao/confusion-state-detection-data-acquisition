@@ -73,17 +73,6 @@ def handler(signal_received, frame):
 # Bind the handler to the SIGINT signal (usually triggered by CTRL+C)
 signal(SIGINT, handler)
 
-# # Function to serialize body tracking data into a dictionary format
-# def serialize_body(body, timestamp):
-#     return {
-#         "id": body.unique_object_id,  # Unique ID of the detected body
-#         "ts": timestamp,  # Timestamp of the detection
-#         "keypoint": body.keypoint.tolist(),  # List of keypoints (skeleton joints)
-#         "confidence": body.confidence,  # Confidence level of the detection
-#         # "tracking_state": body.tracking_state,
-#         # "action_state": body.action_state
-#     }
-
 # Function to create the folder for the current date if it doesn't exist
 def create_context_folder(context):
     """

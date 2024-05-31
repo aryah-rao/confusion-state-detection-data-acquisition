@@ -62,7 +62,7 @@ def main():
     It then saves the body tracking data to a JSON file.
     """
     # Read the localization file
-    filepath = opt.folder_path
+    filepath = os.path.join(opt.folder_path, 'calibration.json')
     fusion_configurations = sl.read_fusion_configuration_file(filepath, sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP, sl.UNIT.METER)
     if len(fusion_configurations) <= 0:
         print("Invalid file.")
@@ -201,15 +201,14 @@ def main():
     rt.skeleton_minimum_allowed_keypoints = 7
     
     # Create the OpenGL viewer
-    # viewer = gl.GLViewer()
-    # viewer.init()
+    viewer = gl.GLViewer()
+    viewer.init()
 
     # Create the objects to store the bodies
     bodies = sl.Bodies()
 
     # Main loop to retrieve and display the bodies
-    # while (viewer.is_available()):
-    while True:
+    while (viewer.is_available()):
         for serial in senders:
             zed = senders[serial]
             if zed.grab() == sl.ERROR_CODE.SUCCESS:
@@ -222,13 +221,13 @@ def main():
             fusion.retrieve_bodies(bodies, rt)
             
             # Update the viewer with the bodies
-            # viewer.update_bodies(bodies)
+            viewer.update_bodies(bodies)
 
             # Serialize body tracking data
-            for body in bodies.body_list:
-                body_json.append(serialize_body(body, fusion.get_timestamp(sl.TIME_REFERENCE.CURRENT).get_milliseconds()))
-        else:
-            break
+#            for body in bodies.body_list:
+#                body_json.append(serialize_body(body, fusion.get_timestamp(sl.TIME_REFERENCE.CURRENT).get_milliseconds()))
+#        else:
+#            break
         
     # Save the body tracking data to a JSON file
     output_filepath = os.path.join(opt.folder_path, "body_tracking.json")
@@ -240,7 +239,7 @@ def main():
         senders[sender].close()
         
     # Exit the viewer
-    # viewer.exit()
+    viewer.exit()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser() # Create an argument parser
