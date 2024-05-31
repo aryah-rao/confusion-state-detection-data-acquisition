@@ -19,7 +19,7 @@
 ########################################################################
 
 import sys
-import pyzed.sl as sl
+import pyzed.sl as sl # type: ignore
 from signal import signal, SIGINT
 import time
 import os
