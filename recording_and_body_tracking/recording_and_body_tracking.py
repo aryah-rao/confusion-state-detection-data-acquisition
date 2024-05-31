@@ -42,66 +42,153 @@ experiment_folder = ""  # Global variable to store the experiment folder path
 
 # Handler to deal with CTRL+C (SIGINT) signal properly
 def handler(signal_received, frame):
+    """
+    Handle the SIGINT signal (usually triggered by CTRL+C) properly.
+    This function is executed when the signal is received and it performs the following steps:
+    1. Disable recording for each active camera
+    2. Close each active camera
+    3. Save the collected body tracking data to a JSON file
+    4. Exit the program
+    """
     global zcameras, body_json, experiment_folder
+    
+    # Print a message to inform that the program is receiving the signal
     print("got sigint, shutting cameras")
+    
+    # Iterate over each active camera
     for cam in zcameras:
-        cam.disable_recording()  # Disable recording for each camera
-        cam.close()  # Close each camera
+        
+        # Disable recording for each camera
+        cam.disable_recording()
+        
+        # Close each camera
+        cam.close()
+    
+    # Print a message to inform that the body tracking data is being dumped to a JSON file
     print("dumping json")
+    
+    # Create the file path to the JSON file
     body_tracking_file = os.path.join(experiment_folder, 'body_tracking.json')
+    
+    # Open the JSON file in write mode
     with open(body_tracking_file, 'w') as outfile:
-        json.dump(body_json, outfile)  # Save the collected body tracking data to a JSON file
+        
+        # Save the collected body tracking data to the JSON file
+        json.dump(body_json, outfile)
+    
+    # Print a message to inform that the program is exiting
     print("exiting")
-    sys.exit(0)  # Exit the program
+    
+    # Exit the program
+    sys.exit(0)
 
 # Bind the handler to the SIGINT signal (usually triggered by CTRL+C)
 signal(SIGINT, handler)
 
 # Function to serialize body tracking data into a dictionary format
 def serialize_body(body, timestamp):
-    return {
-        "id": body.unique_object_id,  # Unique ID of the detected body
-        "ts": timestamp,  # Timestamp of the detection
-        "keypoint": body.keypoint.tolist(),  # List of keypoints (skeleton joints)
-        "confidence": body.confidence,  # Confidence level of the detection
-        # "tracking_state": body.tracking_state,
-        # "action_state": body.action_state
+    """
+    Serialize the body tracking data into a dictionary format.
+
+    Args:
+        body (sl.Body): The body object containing the tracking data.
+        timestamp (float): The timestamp of the detection.
+
+    Returns:
+        dict: A dictionary containing the serialized body tracking data.
+    """
+    # Create a dictionary to store the serialized body tracking data
+    serialized_body = {
+        # Unique ID of the detected body
+        "id": body.unique_object_id,
+        # Timestamp of the detection
+        "ts": timestamp,
+        # List of keypoints (skeleton joints)
+        "keypoint": body.keypoint.tolist(),
+        # Confidence level of the detection
+        "confidence": body.confidence,
+        # "tracking_state": body.tracking_state,  # Uncomment this line to include the tracking state
+        # "action_state": body.action_state  # Uncomment this line to include the action state
     }
+
+    # Return the serialized body tracking data
+    return serialized_body
 
 # Function to create the folder for the current date if it doesn't exist
 def create_context_folder(context):
+    """
+    Create a folder for the current date with the given context.
+
+    Args:
+        context (str): The context of the experiment.
+
+    Returns:
+        str: The path to the created folder.
+    """
+    # Define the path to the experiments directory
     experiments_path = "./experiments/"
+
+    # Get the current date in the format "YYYY-MM-DD"
     current_date = time.strftime("%Y-%m-%d")
+
+    # Construct the folder path by joining the experiments path,
+    # the current date, and the context with an underscore.
     folder_path = os.path.join(experiments_path, current_date, current_date + "_" + context)
+
+    # Check if the folder already exists
     if not os.path.exists(folder_path):
+        # If the folder does not exist, create it
         os.makedirs(folder_path)
+
+    # Return the path to the created folder
     return folder_path
 
 # Function to run the calibration using ZED360 executable
 def run_calibration(experiment_folder):
+    # Define the path to the ZED360 executable
     zed360_executable = os.path.join("./zed-tools/", "ZED360")
+    
+    # Check if the ZED360 executable exists
     if not os.path.exists(zed360_executable):
+        # If the executable is not found, print an error message and exit
         print(f"ZED360 executable not found at {zed360_executable}")
         exit(1)
     
+    # Print a message to indicate that ZED360 is starting for calibration
     print("Starting ZED360 for calibration...")
-    subprocess.run([zed360_executable])  # Run the executable and wait for it to close
     
-    # Check if the necessary calibration file exists
+    # Run the ZED360 executable and wait for it to close
+    subprocess.run([zed360_executable])
+    
+    # Construct the path to the calibration file
     calibration_file_path = os.path.join(experiment_folder, 'calibration.json')
+    
+    # Check if the calibration file exists
     if not os.path.exists(calibration_file_path):
+        # If the calibration file is not found, print an error message and exit
         print("Calibration file not found at", calibration_file_path)
         exit(1)
     
     # Read the fusion configuration file
-    fusion_configurations = sl.read_fusion_configuration_file(calibration_file_path, sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP, sl.UNIT.METER)
+    fusion_configurations = sl.read_fusion_configuration_file(
+        calibration_file_path, 
+        sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP, 
+        sl.UNIT.METER
+    )
+    
+    # Check if the fusion configuration file is valid
     if len(fusion_configurations) <= 0:
+        # If the file is invalid, print an error message and exit
         print("Invalid file.")
         exit(1)
     
+    # Print a message to indicate successful calibration
     print("Calibration successful.")
-    input("Press any key to start recording...")  # Wait for user input
-
+    
+    # Wait for user input before starting recording
+    input("Press any key to start recording...")
+    
+    # Return the fusion configurations
     return fusion_configurations
 
 # Main function
