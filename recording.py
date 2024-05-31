@@ -23,8 +23,10 @@ import pyzed.sl as sl # type: ignore
 from signal import signal, SIGINT
 import time
 import os
+import subprocess
 
 cam = sl.Camera()
+audio_process = None  # Global variable to store the audio recording process
 
 # Handler to deal with CTRL+C properly
 def handler(signal_received, frame):
@@ -42,9 +44,13 @@ def handler(signal_received, frame):
     # Disable the recording of the camera
     cam.disable_recording()
     
+    # Stop audio recording
+    stop_audio_recording()
+
     # Close the camera
     cam.close()
     
+    print("Video recording stopped.")
     # Exit the program
     sys.exit(0)
 
@@ -82,6 +88,29 @@ def create_context_folder(context):
     
     # Return the path to the folder
     return folder_path
+
+def start_audio_recording(output_file):
+    """
+    Start recording audio using arecord.
+
+    Args:
+        output_file (str): The path to the output audio file.
+    """
+    global audio_process
+    command = ["arecord", "-f", "cd", "-t", "wav", output_file]
+    audio_process = subprocess.Popen(command)
+    print("Audio recording started...")
+
+def stop_audio_recording():
+    """
+    Stop the audio recording.
+    """
+    global audio_process
+    if audio_process:
+        audio_process.terminate()
+        audio_process.wait()
+        print("Audio recording stopped.")
+
 
 def main():
     """
@@ -134,6 +163,10 @@ def main():
     
     # Print message indicating SVO recording has started
     print("SVO is Recording, use Ctrl-C to stop.")
+    
+    # Start audio recording
+    audio_filename = os.path.join(experiment_folder, "audio_recording.wav")
+    start_audio_recording(audio_filename)
     
     # Initialize frame counter
     frames_recorded = 0
