@@ -22,23 +22,47 @@
    This sample shows how to detect a human bodies and draw their 
    modelised skeleton in an OpenGL window
 """
-import cv2
+import argparse
 import sys
-import pyzed.sl as sl
+import pyzed.sl as sl  # type: ignore
 import time
 import ogl_viewer.viewer as gl
 import numpy as np
+import json
+import os
+
+body_json = []  # List to store serialized body tracking data
+
+def serialize_body(body, timestamp):
+    """
+    Serialize the body tracking data into a dictionary format.
+
+    Args:
+        body (sl.Body): The body object containing the tracking data.
+        timestamp (float): The timestamp of the detection.
+
+    Returns:
+        dict: A dictionary containing the serialized body tracking data.
+    """
+    # Create a dictionary to store the serialized body tracking data
+    serialized_body = {
+        "id": body.unique_object_id,  # Unique ID of the detected body
+        "ts": timestamp,  # Timestamp of the detection
+        "keypoint": body.keypoint.tolist(),  # List of keypoints (skeleton joints)
+        "keypoint_confidence": body.keypoint_confidence.tolist(),  # Confidence levels of the keypoints
+        "confidence": body.confidence  # Confidence level of the detection
+    }
+
+    # Return the serialized body tracking data
+    return serialized_body
 
 def main():
-    # Check if the required localization file is provided
-    if len(sys.argv) < 2:
-        print("This sample display the fused body tracking of multiple cameras.")
-        print("It needs a Localization file in input. Generate it with ZED 360.")
-        print("The cameras can either be plugged to your devices, or already running on the local network.")
-        exit(1)
-
+    """
+    This function reads the localization file, initializes the cameras based on the configuration, and performs body tracking on the cameras.
+    It then saves the body tracking data to a JSON file.
+    """
     # Read the localization file
-    filepath = sys.argv[1]
+    filepath = opt.folder_path
     fusion_configurations = sl.read_fusion_configuration_file(filepath, sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP, sl.UNIT.METER)
     if len(fusion_configurations) <= 0:
         print("Invalid file.")
@@ -177,15 +201,15 @@ def main():
     rt.skeleton_minimum_allowed_keypoints = 7
     
     # Create the OpenGL viewer
-    viewer = gl.GLViewer()
-    viewer.init()
+    # viewer = gl.GLViewer()
+    # viewer.init()
 
     # Create the objects to store the bodies
     bodies = sl.Bodies()
-    single_bodies = [sl.Bodies]
 
     # Main loop to retrieve and display the bodies
-    while (viewer.is_available()):
+    # while (viewer.is_available()):
+    while True:
         for serial in senders:
             zed = senders[serial]
             if zed.grab() == sl.ERROR_CODE.SUCCESS:
@@ -198,14 +222,34 @@ def main():
             fusion.retrieve_bodies(bodies, rt)
             
             # Update the viewer with the bodies
-            viewer.update_bodies(bodies)
-            
+            # viewer.update_bodies(bodies)
+
+            # Serialize body tracking data
+            for body in bodies.body_list:
+                body_json.append(serialize_body(body, fusion.get_timestamp(sl.TIME_REFERENCE.CURRENT).get_milliseconds()))
+        else:
+            break
+        
+    # Save the body tracking data to a JSON file
+    output_filepath = os.path.join(opt.folder_path, "body_tracking.json")
+    with open(output_filepath, "w") as outfile:
+        json.dump(body_json, outfile)
+
     # Close the camera objects
     for sender in senders:
         senders[sender].close()
         
     # Exit the viewer
-    viewer.exit()
+    # viewer.exit()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser() # Create an argument parser
+    parser.add_argument('--folder_path', type=str, help='Path to the localization file', required=True)
+    opt = parser.parse_args()
+
+    # Validate the folder path
+    if not os.path.isdir(opt.folder_path):
+        print("--folder_path parameter should be an existing directory but is not: ", opt.folder_path)
+        exit()
+
     main()
