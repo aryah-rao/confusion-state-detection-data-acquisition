@@ -25,7 +25,7 @@
 import os
 import time
 import sys
-import pyzed.sl as sl
+import pyzed.sl as sl # type: ignore
 import json
 import argparse
 from signal import signal, SIGINT
