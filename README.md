@@ -49,7 +49,7 @@ You will be prompted to enter the context:
 Please enter the context for the experiment: my_experiment
 ```
 
-### 6. Recording and Output
+### 2. Recording and Output
 
 The script will begin capturing body tracking data from the connected ZED camera.
 
@@ -67,7 +67,7 @@ Example output:
 
 ### Body Tracking
 
-### 8. Run the Script
+### 3. Run the Script
 
 The body_tracking.py script detects human bodies and visualizes their skeletal models. Here, the localization file is the path to the calibration file that is in the same directory as the svo2 files.
 
@@ -75,7 +75,7 @@ The body_tracking.py script detects human bodies and visualizes their skeletal m
 python body_tracking.py <folder_path>
 ```
 
-### 9. End of the Script
+### 4. End of the Script
 
 The script will save the body tracking data to a JSON file, and close the camera. The script will output:
 - A body_tracking.json file with the recorded body tracking data.
