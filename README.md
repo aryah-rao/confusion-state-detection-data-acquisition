@@ -68,11 +68,11 @@ Example structure:
 ./experiments/2024-05-21/2024-05-21_my_experiment/calibration.json
 ```
 
-### 6. Recording and Output
+### 3. Recording and Output
 
 Once calibration is complete, close `ZED360`, and then press any key to start recording. The script will begin capturing body tracking data from the connected ZED cameras.
 
-### 7. Stopping the script:
+### 4. Stopping the script:
 
 To stop the script and save the recorded data, press CTRL+C. The script will handle the shutdown process, save the recorded svo2 file(s), and close all cameras. The script will output:
 - One or more .svo files for each camera.
@@ -90,7 +90,7 @@ Example output:
 
 ### Body Tracking
 
-### 8. Run the Script
+### 5. Run the Script
 
 The body_tracking.py script detects human bodies and visualizes their skeletal models. Here, the localization file is the path to the calibration file that is in the same directory as the svo2 files.
 
@@ -98,7 +98,7 @@ The body_tracking.py script detects human bodies and visualizes their skeletal m
 python body_tracking.py <path_to_localization_file>
 ```
 
-### 9. End of the Script
+### 6. End of the Script
 
 The script will save the body tracking data to a JSON file, and close all cameras. The script will output:
 - A body_tracking.json file with the recorded body tracking data.
