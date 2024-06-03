@@ -4,7 +4,7 @@
 
 This folder contains two main scripts:
 
-1. `svo_export.py`: This script reads SVO files, calculates the real frame rate to compensate for frame drops, converts a SVO file into an AVI file, and creates a `metadata.json` file with the average frame rate and empty lists for seconds and frames. It can also convert a SVO in the following png image sequences: LEFT+RIGHT, LEFT+DEPTH_VIEW, and LEFT+DEPTH_16Bit.
+1. `svo_export.py`: This script reads SVO files, calculates the real frame rate to compensate for frame drops, converts a SVO & WAV file into an AVI file, and creates a `metadata.json` file with the average frame rate and empty lists for seconds and frames. It can also convert a SVO in the following png image sequences: LEFT+RIGHT, LEFT+DEPTH_VIEW, and LEFT+DEPTH_16Bit.
 2. `update_metadata.py`: This script processes the `metadata.json` file to ensure the lengths of the seconds and frames lists are equal. If not, it converts the timestamps to frame numbers using the average frame rate.
 
 ## Getting Started
