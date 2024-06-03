@@ -63,6 +63,11 @@ def handler(signal_received, frame):
     # Stop audio recording
     stop_audio_recording()
 
+    # print("dumping json")
+    # body_tracking_file = os.path.join(experiment_folder, 'body_tracking.json')
+    # with open(body_tracking_file, 'w') as outfile:
+    #     json.dump(body_json, outfile)  # Save the collected body tracking data to a JSON file
+
     # Update the calibration.json file
     # This function updates the calibration.json file with the new data
     update_calibration(experiment_folder)
@@ -75,6 +80,17 @@ def handler(signal_received, frame):
 
 # Bind the handler to the SIGINT signal (usually triggered by CTRL+C)
 signal(SIGINT, handler)
+
+# # Function to serialize body tracking data into a dictionary format
+# def serialize_body(body, timestamp):
+#     return {
+#         "id": body.unique_object_id,  # Unique ID of the detected body
+#         "ts": timestamp,  # Timestamp of the detection
+#         "keypoint": body.keypoint.tolist(),  # List of keypoints (skeleton joints)
+#         "confidence": body.confidence,  # Confidence level of the detection
+#         # "tracking_state": body.tracking_state,
+#         # "action_state": body.action_state
+#     }
 
 # Function to create the folder for the current date if it doesn't exist
 def create_context_folder(context):
@@ -276,6 +292,12 @@ def main():
     positional_tracking_parameters = sl.PositionalTrackingParameters()
     positional_tracking_parameters.set_as_static = True  # Set positional tracking as static
 
+    # body_tracking_parameters = sl.BodyTrackingParameters()
+    # body_tracking_parameters.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_FAST  # Set body tracking model
+    # body_tracking_parameters.body_format = sl.BODY_FORMAT.BODY_34  # Set body format to BODY_34 (34 keypoints)
+    # body_tracking_parameters.enable_body_fitting = True  # Enable body fitting
+    # body_tracking_parameters.enable_tracking = True  # Enable tracking
+
     # Initialize cameras based on the configuration
     for conf in fusion_configurations:
         # Print the camera serial number
@@ -306,6 +328,13 @@ def main():
                 del senders[conf.serial_number]  # Remove the camera if positional tracking fails
                 continue
 
+            # # Enable body tracking
+            # status = senders[conf.serial_number].enable_body_tracking(body_tracking_parameters)
+            # if status != sl.ERROR_CODE.SUCCESS:
+            #     print("Error enabling the body tracking of camera", conf.serial_number)
+            #     del senders[conf.serial_number]  # Remove the camera if body tracking fails
+            #     continue
+    
             # Start publishing data
             senders[conf.serial_number].start_publishing(communication_parameters)  # Start data publishing
 
@@ -333,6 +362,9 @@ def main():
     
     print("Cameras in this configuration : ", len(fusion_configurations))
 
+    # Warmup recording
+    # bodies = sl.Bodies()  # Create a Bodies object to store body tracking data
+    
     # Enable recording for each local camera
     for serial in senders:
         # Add camera to the global list for shutdown handling
@@ -361,14 +393,11 @@ def main():
     # Subscribe to each camera in the fusion configuration
     for i in range(0, len(fusion_configurations)):
         conf = fusion_configurations[i]
-        # Create a CameraIdentifier object
-        uuid = sl.CameraIdentifier()
-        # Set the serial number
-        uuid.serial_number = conf.serial_number
+        uuid = sl.CameraIdentifier()  # Create a CameraIdentifier object
+        uuid.serial_number = conf.serial_number  # Set the serial number
         print("Subscribing to", conf.serial_number, conf.communication_parameters.comm_type)
 
-        # Subscribe to the camera
-        status = fusion.subscribe(uuid, conf.communication_parameters, conf.pose)
+        status = fusion.subscribe(uuid, conf.communication_parameters, conf.pose)  # Subscribe to the camera
         if status != sl.FUSION_ERROR_CODE.SUCCESS:
             print("Unable to subscribe to", uuid.serial_number, status)
         else:
@@ -379,6 +408,47 @@ def main():
     if len(camera_identifiers) <= 0:
         print("No camera connected.")
         sys.exit(1)  # Exit if no cameras are connected
+
+    # Set fusion body tracking parameters
+    # body_tracking_fusion_params = sl.BodyTrackingFusionParameters()
+    # body_tracking_fusion_params.enable_tracking = True  # Enable body tracking
+    # body_tracking_fusion_params.enable_body_fitting = False  # Disable body fitting
+    
+    # fusion.enable_body_tracking(body_tracking_fusion_params)  # Enable body tracking in fusion
+
+    # Runtime parameters for body tracking
+    # rt = sl.BodyTrackingFusionRuntimeParameters()
+    # rt.skeleton_minimum_allowed_keypoints = 7  # Minimum allowed keypoints for a valid skeleton
+
+    # viewer = gl.GLViewer()
+    # viewer.init()
+
+    # Create ZED objects filled in the main loop
+    # bodies = sl.Bodies()  # Create a Bodies object to store body tracking data
+    # single_bodies = [sl.Bodies]  # List to store bodies from individual cameras
+
+    # Main loop to grab and process body tracking data
+    while True:
+        for serial in senders:
+            zed = senders[serial]  # Get the camera object
+            if zed.grab() == sl.ERROR_CODE.SUCCESS:
+                # zed.retrieve_bodies(bodies)  # Retrieve body tracking data
+                pass
+
+        if fusion.process() == sl.FUSION_ERROR_CODE.SUCCESS:
+            # fusion.retrieve_bodies(bodies, rt)  # Retrieve fused body tracking data
+            # body_json.append([serialize_body(b, bodies.timestamp.get_milliseconds()) for b in bodies.body_list])  # Serialize and store body tracking data
+
+            # for debug, you can retrieve the data send by each camera, as well as communication and process stat just to make sure everything is okay
+            # for cam in camera_identifiers:
+            #     fusion.retrieveBodies(single_bodies, rt, cam);
+            # viewer.update_bodies(bodies)
+            pass
+            
+    for sender in senders:
+        senders[sender].close()  # Close each camera
+
+    # viewer.exit()
 
 if __name__ == '__main__':
     main()  # Run the main function
