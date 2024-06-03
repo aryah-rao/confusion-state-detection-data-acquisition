@@ -72,10 +72,11 @@ Example structure:
 
 Once calibration is complete, close `ZED360`, and then press any key to start recording. The script will begin capturing body tracking data from the connected ZED cameras.
 
-### 4. Stopping the script:
+### 4. Stopping thaudio_recording.wave script:
 
-To stop the script and save the recorded data, press CTRL+C. The script will handle the shutdown process, save the recorded svo2 file(s), and close all cameras. The script will output:
+To stop the script and save the recorded data, press CTRL+C. The script will handle the shutdown process, save the recorded svo2 & wav files, and close all cameras. The script will output:
 - One or more .svo files for each camera.
+- One .wav file.
 
 All these files will be saved in the same directory as the calibration file.
 
@@ -86,6 +87,7 @@ Example output:
     calibration.json
     YY-MM-DD_12345_my_experiment.svo
     YY-MM-DD_67890_my_experiment.svo
+    audio_recording.wav
 ```
 
 ### Body Tracking
@@ -112,6 +114,7 @@ Example output:
     calibration.json
     YY-MM-DD_12345_my_experiment.svo
     YY-MM-DD_67890_my_experiment.svo
+    audio_recording.wav
     body_tracking.json
 ```
 
