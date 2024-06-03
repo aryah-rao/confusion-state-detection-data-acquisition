@@ -53,8 +53,9 @@ Please enter the context for the experiment: my_experiment
 
 The script will begin capturing body tracking data from the connected ZED camera.
 
-To stop the script and save the recorded data, press CTRL+C. The script will handle the shutdown process, save the recorded svo2 file, and close the camera. The script will output:
+To stop the script and save the recorded data, press CTRL+C. The script will handle the shutdown process, save the recorded svo2 and wav file, and close the camera. The script will output:
 - One .svo or .svo2 file.
+- One .wav file
 
 All these files will be saved in the directory structures as this:
 
@@ -63,13 +64,14 @@ Example output:
 ```bash
 ./experiments/YY-MM-DD/YY-MM-DD_my_experiment/
     YY-MM-DD_12345_my_experiment.svo
+    audio_recording.wav
 ```
 
 ### Body Tracking
 
 ### 3. Run the Script
 
-The body_tracking.py script detects human bodies and visualizes their skeletal models. Here, the localization file is the path to the calibration file that is in the same directory as the svo2 files.
+The body_tracking.py script detects human bodies and visualizes their skeletal models.
 
 ```bash
 python body_tracking.py <folder_path>
@@ -87,6 +89,7 @@ Example output:
 ```bash
 ./experiments/YY-MM-DD/YY-MM-DD_my_experiment/
     YY-MM-DD_12345_my_experiment.svo
+    audio_recording.wav
     body_tracking.json
 ```
 
