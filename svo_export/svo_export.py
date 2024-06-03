@@ -83,7 +83,7 @@ def calculate_average_frame_rate(svo_path):
         return None
 
     # Set the SVO position to the last frame
-    zed.set_svo_position(total_frames - 1)
+    zed.set_svo_position(total_frames - 2)
 
     # Grab the last frame
     if zed.grab() == sl.ERROR_CODE.SUCCESS:
