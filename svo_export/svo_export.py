@@ -8,6 +8,7 @@ import argparse
 import os
 import time
 import json
+import subprocess
 
 # Function to display a progress bar in the console
 def progress_bar(current, total, bar_length=50):
