@@ -1,8 +1,8 @@
-# Experiments folder
+# Experiments Folder
 experiments/
 
-# Body Tracking JSON
-body_tracking.json
+# Zed Tools Folder
+zed-tools/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
