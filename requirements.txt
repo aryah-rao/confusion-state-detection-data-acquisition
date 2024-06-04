@@ -1,5 +1,6 @@
 numpy
 argparse
+ffmpeg
 cython 
 opencv-python 
 pyopengl
