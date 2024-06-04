@@ -15,6 +15,12 @@ To run the provided script, ensure you have the following dependencies installed
 
 ## Setup
 
+### Clone this repository to your local machine:
+
+```bash
+git clone https://github.com/aryah-rao/denison-research-summer-24
+```
+
 ### Install the required dependencies:
 
 Please follow the installation guide provided by Stereolabs to install the latest version of PyZED SDK:
@@ -30,12 +36,6 @@ Install other requirements:
 
 ```bash
 pip install -r requirements.txt
-```
-
-### Clone this repository to your local machine:
-
-```bash
-git clone https://github.com/aryah-rao/denison-research-summer-24
 ```
 
 ## Usage
