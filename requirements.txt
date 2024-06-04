@@ -1,2 +1,5 @@
 numpy
 argparse
+cython 
+opencv-python 
+pyopengl
