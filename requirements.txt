@@ -1,3 +1,8 @@
 numpy
 argparse
 ffmpeg
+numpy
+argparse
+cython 
+opencv-python 
+pyopengl
