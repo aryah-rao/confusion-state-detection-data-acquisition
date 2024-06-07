@@ -193,11 +193,16 @@ def main():
         if zed.grab() == sl.ERROR_CODE.SUCCESS:
             # Retrieve left image
             zed.retrieve_image(image, sl.VIEW.LEFT, sl.MEM.CPU, display_resolution)
+
             # Retrieve bodies
             zed.retrieve_bodies(bodies, body_runtime_param)
-            body_json.append([serialize_body(b, bodies.timestamp.get_milliseconds()) for b in bodies.body_list]) 
+
+            # Serialize body tracking data
+            body_json[frame_number] = {b.unique_object_id: serialize_body(b, bodies.timestamp.get_milliseconds()) for b in bodies.body_list}
+
             # Update GL view
-            viewer.update_view(image, bodies) 
+            viewer.update_view(image, bodies)
+
             # Update OCV view
             image_left_ocv = image.get_data()
             cv_viewer.render_2D(image_left_ocv, image_scale, bodies.body_list, body_param.enable_tracking, body_param.body_format)
