@@ -184,6 +184,10 @@ def main():
     bodies = sl.Bodies()
     image = sl.Mat()
     key_wait = 10 
+
+    # Frame counter
+    frame_number = 0
+
     while viewer.is_available():
         # Grab an image
         if zed.grab() == sl.ERROR_CODE.SUCCESS:
@@ -199,6 +203,9 @@ def main():
             cv_viewer.render_2D(image_left_ocv, image_scale, bodies.body_list, body_param.enable_tracking, body_param.body_format)
             cv2.imshow("ZED | 2D View", image_left_ocv)
             key = cv2.waitKey(key_wait)
+
+            # Frame counter
+            frame_number += 1
             # If 'q' key is pressed, exit the program
             if key == 113: 
                 print("Exiting...")
@@ -213,8 +220,11 @@ def main():
                     key_wait = 10 
         else:
             break
+    
+    # Save body tracking data to a JSON file
     with open(os.path.join(opt.folder_path,"body_tracking.json"), "w+") as outfile:
-        json.dump(body_json, outfile)
+        json.dump(body_json, outfile, indent=4)
+
     # Clean up resources
     viewer.exit()
     image.free(sl.MEM.CPU)
