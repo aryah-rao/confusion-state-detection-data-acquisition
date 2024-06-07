@@ -50,7 +50,11 @@ def serialize_body(body, timestamp):
         "ts": timestamp,  # Timestamp of the detection
         "keypoint": body.keypoint.tolist(),  # List of keypoints (skeleton joints)
         "keypoint_confidence": body.keypoint_confidence.tolist(),  # Confidence levels of the keypoints
-        "confidence": body.confidence  # Confidence level of the detection
+        "confidence": body.confidence,  # Confidence level of the detection
+        "velocity": body.velocity.tolist(),  # Velocity of the body
+        "head_position": body.head_position.tolist(),  # Position of the head
+        "local_position_per_joint": body.local_position_per_joint.tolist(),  # Local position of each joint
+        "local_orientation_per_joint": body.local_orientation_per_joint.tolist()  # Local orientation of each joint
     }
 
     # Return the serialized body tracking data
