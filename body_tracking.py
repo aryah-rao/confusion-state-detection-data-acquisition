@@ -229,7 +229,7 @@ def main():
             viewer.update_bodies(bodies)
 
             # Serialize body tracking data
-            body_json[frame_number] = [serialize_body(b, bodies.timestamp.get_milliseconds()) for b in bodies.body_list]  # Serialize and store body tracking data
+            body_json[frame_number] = {b.unique_object_id: serialize_body(b, bodies.timestamp.get_milliseconds()) for b in bodies.body_list}  # Serialize and store body tracking data
 
             # Increment the frame number
             frame_number += 1
