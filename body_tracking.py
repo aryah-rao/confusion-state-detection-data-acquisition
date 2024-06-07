@@ -31,7 +31,7 @@ import numpy as np
 import json
 import os
 
-body_json = []  # List to store serialized body tracking data
+body_json = {}  # Dictionary to store serialized body tracking data
 
 def serialize_body(body, timestamp):
     """
@@ -207,6 +207,8 @@ def main():
     # Create the objects to store the bodies
     bodies = sl.Bodies()
 
+    frame_number = 0
+
     # Main loop to retrieve and display the bodies
 #    while True:
     while (viewer.is_available()):
@@ -227,7 +229,10 @@ def main():
             viewer.update_bodies(bodies)
 
             # Serialize body tracking data
-            body_json.append([serialize_body(b, bodies.timestamp.get_milliseconds()) for b in bodies.body_list])  # Serialize and store body tracking data
+            body_json[frame_number] = [serialize_body(b, bodies.timestamp.get_milliseconds()) for b in bodies.body_list]  # Serialize and store body tracking data
+
+            # Increment the frame number
+            frame_number += 1
 
         elif zed.grab() == sl.ERROR_CODE.END_OF_SVOFILE_REACHED:
             break
@@ -235,7 +240,7 @@ def main():
     # Save the body tracking data to a JSON file
     output_filepath = os.path.join(opt.folder_path, "body_tracking.json")
     with open(output_filepath, "w") as outfile:
-        json.dump(body_json, outfile)
+        json.dump(body_json, outfile, indent=4)
 
     # Close the camera objects
     for sender in senders:
