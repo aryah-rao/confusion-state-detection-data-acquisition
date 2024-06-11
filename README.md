@@ -1,4 +1,4 @@
-# Human-Robot Interaction Denison Research Summer 24
+# Task Confusion State Data Acquision
 
 ## Overview
 
