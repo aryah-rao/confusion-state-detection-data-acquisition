@@ -59,28 +59,27 @@ def save_to_csv(df, output_path):
         df (pd.DataFrame): The DataFrame to save.
         output_path (str): The path to save the CSV file.
     """
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     df.to_csv(output_path, index=False)
 
-def main(input_dir):
+def main(folder_path):
     """
     Main function to read the JSON file, flatten it, and save it as a CSV.
     
     Args:
-        input_dir (str): The directory path containing the JSON file.
+        folder_path (str): The directory path containing the JSON file.
     """
-    json_path = os.path.join(input_dir, 'body_tracking.json')
-    csv_path = os.path.join(input_dir, 'labelled.csv')
+    json_path = os.path.join(folder_path, 'body_tracking.json')
+    folder_name = os.path.basename(folder_path)
+    csv_path = os.path.join('../../../../intermediate-data/zed-body-tracking', folder_name+'.csv')
     
     json_data = read_json(json_path)
     flattened_df = flatten_json(json_data)
     save_to_csv(flattened_df, csv_path)
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Convert body_tracking.json to a CSV file.')
-    parser.add_argument('input_dir', type=str, help='Directory containing the body_tracking.json file')
+    parser.add_argument('folder_path', type=str, help='Directory containing the body_tracking.json file')
     args = parser.parse_args()
     
-    main(args.input_dir)
-    
-
+    main(args.folder_path)
