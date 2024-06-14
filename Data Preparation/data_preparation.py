@@ -2,6 +2,7 @@ import json
 import os
 import argparse
 import pandas as pd
+from collections import OrderedDict
 
 def get_average_frame_rate_from_metadata(metadata_file):
     """
@@ -17,6 +18,9 @@ def get_average_frame_rate_from_metadata(metadata_file):
     with open(metadata_file, "r") as json_file:
         metadata = json.load(json_file)
         average_frame_rate = metadata.get("average_frame_rate")
+        if average_frame_rate is None:
+            return None, None
+        
         return average_frame_rate, metadata
 
 def seconds_to_frames(seconds, average_frame_rate):
@@ -30,11 +34,22 @@ def seconds_to_frames(seconds, average_frame_rate):
     Returns:
     - frames (list): A list of frames corresponding to the given seconds.
     """
-    return [int(sec * average_frame_rate) for sec in seconds]
+    frames = []
+    
+    # Iterate over each second in the seconds list
+    for sec in seconds:
+        # Calculate the frame number for the current second using the average frame rate
+        frame = int(sec * average_frame_rate)
+        
+        # Append the frame to the frames list
+        frames.append(frame)
+    
+    # Return the list of frames
+    return frames
 
-def update_metadata(metadata_file, body_tracking_file):
+def update_metadata(metadata_file, metadata, body_tracking_file):
     """
-    Updates the metadata file with the average frame rate and saves it.
+    converts to seconds
 
     Parameters:
     - metadata_file (str): The path to the metadata file.
@@ -44,17 +59,13 @@ def update_metadata(metadata_file, body_tracking_file):
     - average_frame_rate (float): The average frame rate.
     - metadata (dict): The entire metadata.
     """
-    average_frame_rate, metadata = get_average_frame_rate_from_metadata(metadata_file)
-    if average_frame_rate is None:
-        return None, None
 
     metadata_path = os.path.join(os.path.dirname(body_tracking_file), 'metadata.json')
     with open(metadata_path, 'w') as json_file:
         json.dump(metadata, json_file, indent=4)
 
-    return average_frame_rate, metadata
 
-def label_body_tracking(metadata_file, body_tracking_file):
+def extract_intervals(body_tracking_file, frames):
     """
     Adds "confused" or "not confused" (0 or 1) label to each timeframe in body_tracking.json.
 
@@ -62,19 +73,50 @@ def label_body_tracking(metadata_file, body_tracking_file):
     - metadata_file (str): The path to the metadata file.
     - body_tracking_file (str): The path to the body tracking file.
     """
-    average_frame_rate, _ = get_average_frame_rate_from_metadata(metadata_file)
+
 
     with open(body_tracking_file, 'r') as json_file:
         body_data = json.load(json_file)
 
-    for frame in body_data:
-        if frame['frame_number'] < average_frame_rate:
-            frame['label'] = 1
-        else:
-            frame['label'] = 0
+    intervals = set()
+    for i in range(0, len(frames), 2):
+        start, end = frames[i], frames[i+1]
+        intervals.update(range(start, end + 1))
+    return intervals
 
     with open(body_tracking_file, 'w') as json_file:
         json.dump(body_data, json_file, indent=4)
+        
+def label_confused(body_tracking, intervals):
+    """
+    Labels each frame in the body_tracking data as 'confused' (True) or not confused (False).
+    
+    Args:
+        body_tracking (dict): The body tracking data.
+        intervals (set): A set of frame numbers within the specified intervals.
+        
+    Returns:
+        dict: The updated body tracking data with 'confused' labels.
+    """
+    for frame_number_str, frame_data in body_tracking.items():
+        frame_number = int(frame_number_str)  # Convert frame number to integer
+        confused_value = True if frame_number in intervals else False
+        for inner_key in frame_data.keys():
+            inner_data = frame_data[inner_key]
+            # Insert 'confused' at the start of the OrderedDict
+            frame_data[inner_key] = OrderedDict([('confused', confused_value)] + list(inner_data.items()))
+    return body_tracking
+
+def save_body_tracking(body_tracking, output_path):
+    """
+    Saves the modified body_tracking data to a JSON file.
+    
+    Args:
+        body_tracking (dict): The modified body tracking data.
+        output_path (str): The file path to save the modified body_tracking.json file.
+    """
+    with open(output_path, 'w') as file:
+        json.dump(body_tracking, file, indent=4)
 
 def read_json(json_path):
     """
@@ -142,13 +184,13 @@ def main(folder_path):
     metadata_file = os.path.join(folder_path, 'metadata.json')
 
     # Update metadata and get average frame rate
-    average_frame_rate, metadata = update_metadata(metadata_file, body_tracking_file)
+    average_frame_rate = get_average_frame_rate_from_metadata(metadata_file)
     if average_frame_rate is None:
         print("Average frame rate not found in metadata.")
         return
 
     # Label body tracking data
-    label_body_tracking(metadata_file, body_tracking_file)
+    label_confused(metadata_file, body_tracking_file)
 
     # Read and flatten body_tracking.json
     json_data = read_json(body_tracking_file)
