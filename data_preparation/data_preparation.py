@@ -4,18 +4,18 @@ import argparse
 import pandas as pd
 from collections import OrderedDict
 
-def get_average_frame_rate_from_metadata(metadata_file):
+def get_average_frame_rate_from_metadata(metadata_path):
     """
     Reads the metadata file and retrieves the average frame rate.
 
     Parameters:
-    - metadata_file (str): The path to the metadata file.
+    - metadata_path (str): The path to the metadata file.
 
     Returns:
     - average_frame_rate (float): The average frame rate.
     - metadata (dict): The entire metadata.
     """
-    with open(metadata_file, "r") as json_file:
+    with open(metadata_path, "r") as json_file:
         metadata = json.load(json_file)
         average_frame_rate = metadata.get("average_frame_rate")
         if average_frame_rate is None:
@@ -23,100 +23,112 @@ def get_average_frame_rate_from_metadata(metadata_file):
         
         return average_frame_rate, metadata
 
-def seconds_to_frames(seconds, average_frame_rate):
+def seconds_to_frames(seconds_list, average_frame_rate):
     """
     Converts a list of seconds to a list of frame numbers using the average frame rate.
 
     Parameters:
-    - seconds (list): A list of seconds to convert to frames.
+    - seconds_list (list): A list of seconds to convert to frames.
     - average_frame_rate (float): The average frame rate used for the conversion.
 
     Returns:
-    - frames (list): A list of frames corresponding to the given seconds.
+    - frames_list (list): A list of frames corresponding to the given seconds.
     """
-    frames = []
+    frames_list = []
     
-    # Iterate over each second in the seconds list
-    for sec in seconds:
-        # Calculate the frame number for the current second using the average frame rate
-        frame = int(sec * average_frame_rate)
-        
-        # Append the frame to the frames list
-        frames.append(frame)
+    for second in seconds_list:
+        frame = int(second * average_frame_rate)
+        frames_list.append(frame)
     
-    # Return the list of frames
-    return frames
+    return frames_list
 
-def update_metadata(metadata_file, metadata, body_tracking_file):
+def update_metadata(metadata_path, metadata):
     """
-    converts to seconds
+    Updates the metadata file with new information.
 
     Parameters:
-    - metadata_file (str): The path to the metadata file.
-    - body_tracking_file (str): The path to the body tracking file.
-
-    Returns:
-    - average_frame_rate (float): The average frame rate.
-    - metadata (dict): The entire metadata.
+    - metadata_path (str): The path to the metadata file.
+    - metadata (dict): The updated metadata to be saved.
     """
-
-    metadata_path = os.path.join(os.path.dirname(body_tracking_file), 'metadata.json')
     with open(metadata_path, 'w') as json_file:
         json.dump(metadata, json_file, indent=4)
 
-
-def extract_intervals(body_tracking_file, frames):
+def read_metadata(metadata_path):
     """
-    Adds "confused" or "not confused" (0 or 1) label to each timeframe in body_tracking.json.
+    Reads the metadata.json file and returns the parsed JSON data.
+    
+    Parameters:
+    - metadata_path (str): The file path to the metadata.json file.
+        
+    Returns:
+    - dict: The parsed JSON data from the metadata.json file.
+    """
+    with open(metadata_path, 'r') as file:
+        metadata = json.load(file)
+    return metadata
+
+def read_body_tracking(body_tracking_path):
+    """
+    Reads the body_tracking.json file and returns the parsed JSON data.
+    
+    Parameters:
+    - body_tracking_path (str): The file path to the body_tracking.json file.
+        
+    Returns:
+    - dict: The parsed JSON data from the body_tracking.json file.
+    """
+    with open(body_tracking_path, 'r') as file:
+        body_tracking_data = json.load(file)
+    return body_tracking_data
+
+def extract_intervals_from_metadata(metadata, average_frame_rate):
+    """
+    Extracts intervals from metadata and converts them to frames.
 
     Parameters:
-    - metadata_file (str): The path to the metadata file.
-    - body_tracking_file (str): The path to the body tracking file.
+    - metadata (dict): The metadata containing intervals in seconds.
+    - average_frame_rate (float): The average frame rate used for conversion.
+
+    Returns:
+    - intervals (set): A set of frame numbers within the specified intervals.
     """
-
-
-    with open(body_tracking_file, 'r') as json_file:
-        body_data = json.load(json_file)
-
+    intervals_in_seconds = metadata.get("intervals", [])
+    frames_list = seconds_to_frames(intervals_in_seconds, average_frame_rate)
     intervals = set()
-    for i in range(0, len(frames), 2):
-        start, end = frames[i], frames[i+1]
+    for i in range(0, len(frames_list), 2):
+        start, end = frames_list[i], frames_list[i+1]
         intervals.update(range(start, end + 1))
     return intervals
 
-    with open(body_tracking_file, 'w') as json_file:
-        json.dump(body_data, json_file, indent=4)
-        
-def label_confused(body_tracking, intervals):
+def label_confused(body_tracking_data, intervals):
     """
     Labels each frame in the body_tracking data as 'confused' (True) or not confused (False).
     
-    Args:
-        body_tracking (dict): The body tracking data.
-        intervals (set): A set of frame numbers within the specified intervals.
+    Parameters:
+    - body_tracking_data (dict): The body tracking data.
+    - intervals (set): A set of frame numbers within the specified intervals.
         
     Returns:
-        dict: The updated body tracking data with 'confused' labels.
+    - dict: The updated body tracking data with 'confused' labels.
     """
-    for frame_number_str, frame_data in body_tracking.items():
-        frame_number = int(frame_number_str)  # Convert frame number to integer
-        confused_value = True if frame_number in intervals else False
+    for frame_number_str, frame_data in body_tracking_data.items():
+        frame_number = int(frame_number_str)
+        confused_value = frame_number in intervals
         for inner_key in frame_data.keys():
             inner_data = frame_data[inner_key]
-            # Insert 'confused' at the start of the OrderedDict
             frame_data[inner_key] = OrderedDict([('confused', confused_value)] + list(inner_data.items()))
-    return body_tracking
+    return body_tracking_data
 
-def save_body_tracking(body_tracking, output_path):
+def save_body_tracking(body_tracking_data, output_path):
     """
     Saves the modified body_tracking data to a JSON file.
     
-    Args:
-        body_tracking (dict): The modified body tracking data.
-        output_path (str): The file path to save the modified body_tracking.json file.
+    Parameters:
+    - body_tracking_data (dict): The modified body tracking data.
+    - output_path (str): The file path to save the modified body_tracking.json file.
     """
     with open(output_path, 'w') as file:
-        json.dump(body_tracking, file, indent=4)
+        json.dump(body_tracking_data, file, indent=4)
 
 def read_json(json_path):
     """
@@ -142,11 +154,10 @@ def flatten_json(json_data):
     - pd.DataFrame: The flattened JSON data as a pandas DataFrame.
     """
     records = []
-    for frame in json_data:
-        frame_number = frame.get('frame_number')
-        for inner_key, inner_data in frame.items():
+    for frame, frame_data in json_data.items():
+        for inner_key, inner_data in frame_data.items():
             if isinstance(inner_data, dict):
-                record = {'frame_number': frame_number, 'inner_key': inner_key}
+                record = {'frame_number': frame, 'inner_key': inner_key}
                 for key, value in inner_data.items():
                     if isinstance(value, list):
                         if all(isinstance(i, list) for i in value):
@@ -161,16 +172,17 @@ def flatten_json(json_data):
                 records.append(record)
     return pd.DataFrame(records)
 
-def save_to_csv(df, output_path):
+
+def save_to_csv(dataframe, output_path):
     """
     Saves the flattened DataFrame to a CSV file.
 
     Parameters:
-    - df (pd.DataFrame): The DataFrame to save.
+    - dataframe (pd.DataFrame): The DataFrame to save.
     - output_path (str): The path to save the CSV file.
     """
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    df.to_csv(output_path, index=False)
+    dataframe.to_csv(output_path, index=False)
 
 def main(folder_path):
     """
@@ -179,29 +191,35 @@ def main(folder_path):
     Parameters:
     - folder_path (str): The directory path containing the JSON files.
     """
-    # Define paths for body_tracking.json and metadata.json
-    body_tracking_file = os.path.join(folder_path, 'body_tracking.json')
-    metadata_file = os.path.join(folder_path, 'metadata.json')
+    body_tracking_path = os.path.join(folder_path, 'body_tracking.json')
+    metadata_path = os.path.join(folder_path, 'metadata.json')
 
-    # Update metadata and get average frame rate
-    average_frame_rate = get_average_frame_rate_from_metadata(metadata_file)
+    # Get average frame rate from metadata
+    average_frame_rate, metadata = get_average_frame_rate_from_metadata(metadata_path)
     if average_frame_rate is None:
         print("Average frame rate not found in metadata.")
         return
 
-    # Label body tracking data
-    label_confused(metadata_file, body_tracking_file)
+    # Extract intervals from metadata
+    intervals = extract_intervals_from_metadata(metadata, average_frame_rate)
 
-    # Read and flatten body_tracking.json
-    json_data = read_json(body_tracking_file)
-    flattened_df = flatten_json(json_data)
+    # Read body tracking data
+    body_tracking_data = read_body_tracking(body_tracking_path)
 
-    # Define output CSV path
+    # Label the body tracking data with 'confused' based on the intervals
+    labeled_body_tracking_data = label_confused(body_tracking_data, intervals)
+
+    # Save the updated body tracking data back to the JSON file
+    save_body_tracking(labeled_body_tracking_data, body_tracking_path)
+
+    # Flatten the body tracking JSON data to a DataFrame
+    flattened_df = flatten_json(body_tracking_data)
+
+    # Define the output CSV path and save the DataFrame to CSV
     folder_name = os.path.basename(folder_path)
-    csv_path = os.path.join('../../../../intermediate-data/zed-body-tracking', folder_name + '.csv')
+    csv_output_path = os.path.join('../../intermediate-data/zed-body-tracking', folder_name+'.csv')
     
-    # Save the flattened DataFrame to CSV
-    save_to_csv(flattened_df, csv_path)
+    save_to_csv(flattened_df, csv_output_path)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process body_tracking.json with metadata and export to CSV.')
