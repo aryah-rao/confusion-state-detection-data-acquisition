@@ -131,6 +131,22 @@ def save_body_tracking(body_tracking_data, output_path):
     """
     with open(output_path, 'w') as file:
         json.dump(body_tracking_data, file, indent=4)
+        
+def check_outermost_keys(data):
+    """
+    Checks if the outermost keys' values are dictionaries with exactly one key.
+    
+    Parameters:
+    - data (dict): The JSON data to check.
+    
+    Returns:
+    - bool: True if all outermost keys' values are dictionaries with exactly one key, otherwise False.
+    """
+    for key, value in data.items():
+        if isinstance(value, dict) and len(value) != 1:
+            print(f'The outermost key {key} does not contain a dictionary with exactly one key.')
+            return False
+    return True
 
 def read_json(json_path):
     """
@@ -186,6 +202,7 @@ def save_to_csv(dataframe, output_path):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     dataframe.to_csv(output_path, index=False)
 
+
 def main(folder_path):
     """
     Main function to update metadata, label body tracking data, flatten the JSON, and save as CSV.
@@ -195,7 +212,10 @@ def main(folder_path):
     """
     body_tracking_path = os.path.join(folder_path, 'body_tracking.json')
     metadata_path = os.path.join(folder_path, 'metadata.json')
-
+    body_tracking_data = read_body_tracking(body_tracking_path)
+    if not check_outermost_keys(body_tracking_data):
+        print("Validation failed: An outermost key does not contain a dictionary with exactly one key.")
+        return
     # Get average frame rate from metadata
     average_frame_rate, metadata = get_average_frame_rate_from_metadata(metadata_path)
     if average_frame_rate is None:
