@@ -212,6 +212,7 @@ def main(folder_path):
     """
     body_tracking_path = os.path.join(folder_path, 'body_tracking.json')
     metadata_path = os.path.join(folder_path, 'metadata.json')
+    
     body_tracking_data = read_body_tracking(body_tracking_path)
     if not check_outermost_keys(body_tracking_data):
         print("Validation failed: An outermost key does not contain a dictionary with exactly one key.")
