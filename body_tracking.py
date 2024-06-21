@@ -32,7 +32,7 @@ import argparse
 import os
 import json
 
-body_json = []
+body_json = {}
 
 def serialize_body(body, timestamp):
     return {
@@ -129,7 +129,7 @@ def main():
     # Set the coordinate units to meters
     init_params.coordinate_units = sl.UNIT.METER
     # Set the depth mode to ULTRA
-    init_params.depth_mode = sl.DEPTH_MODE.PERFORMANCE
+    init_params.depth_mode = sl.DEPTH_MODE.NEURAL
     # Set the coordinate system to right-handed Y-up
     init_params.coordinate_system = sl.COORDINATE_SYSTEM.RIGHT_HANDED_Y_UP
     
@@ -153,12 +153,12 @@ def main():
     body_param = sl.BodyTrackingParameters()
     # Enable tracking of people across images flow
     body_param.enable_tracking = True
-    # Disable smooth skeleton movement
-    body_param.enable_body_fitting = False
-    # Set the body detection model to HUMAN_BODY_FAST
-    body_param.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_FAST 
+    # Enable smooth skeleton movement
+    body_param.enable_body_fitting = True
+    # Set the body detection model to HUMAN_BODY_ACCURATE
+    body_param.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_ACCURATE 
     # Choose the BODY_FORMAT to use
-    body_param.body_format = sl.BODY_FORMAT.BODY_18 
+    body_param.body_format = sl.BODY_FORMAT.BODY_38 
 
     # Enable Object Detection module
     zed.enable_body_tracking(body_param)
