@@ -51,6 +51,7 @@ def update_metadata(metadata_path, metadata):
     - metadata (dict): The updated metadata to be saved.
     """
     with open(metadata_path, 'w') as json_file:
+        metadata['multiple_bodies'] = [0]
         json.dump(metadata, json_file, indent=4)
 
 def read_metadata(metadata_path):
@@ -79,6 +80,7 @@ def read_body_tracking(body_tracking_path):
     """
     with open(body_tracking_path, 'r') as file:
         body_tracking_data = json.load(file)
+        if body_tracking_data
     return body_tracking_data
 
 def extract_intervals_from_metadata(metadata, average_frame_rate):
