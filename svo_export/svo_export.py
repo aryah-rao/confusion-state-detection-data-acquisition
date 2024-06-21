@@ -219,7 +219,8 @@ def main():
     # Start the conversion loop
     while True:
         # Grab a frame from the SVO file
-        if zed.grab(rt_param) == sl.ERROR_CODE.SUCCESS:
+        zed_status = zed.grab(rt_param) 
+        if zed_status == sl.ERROR_CODE.SUCCESS:
             # Retrieve the left and right images from the ZED camera
             zed.retrieve_image(left_image, sl.VIEW.LEFT)
             zed.retrieve_image(right_image, sl.VIEW.RIGHT)
@@ -241,6 +242,7 @@ def main():
             progress_bar(current_frame, total_frames)
         else:
             # If grabbing a frame fails, break the loop
+            print(zed_status)
             break
 
     # Release the video writer and close the ZED camera
