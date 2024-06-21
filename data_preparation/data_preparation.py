@@ -141,11 +141,15 @@ def check_outermost_keys(data):
     Returns:
     - bool: True if all outermost keys' values are dictionaries with exactly one key, otherwise False.
     """
+    check_results = {}
+    error_frames = []
     for key, value in data.items():
-        if isinstance(value, dict) and len(value) != 1:
-            print(f'The outermost key {key} does not contain a dictionary with exactly one key.')
-            return False
-    return True
+        if isinstance(value, dict) and len(value) == 1:
+            check_results[key] = 0
+        else:
+            check_results[key] = 1
+            error_frames.append(key)
+    return check_results, error_frames
 
 def read_json(json_path):
     """
@@ -160,35 +164,23 @@ def read_json(json_path):
     with open(json_path, 'r') as file:
         return json.load(file)
 
-def flatten_json(json_data):
+def flatten_json(json_data, check_results):
     """
     Flattens the nested JSON structure into a flat dictionary.
 
     Parameters:
     - json_data (dict): The JSON data to flatten.
-
+    - check_results (dict): The outermost keys check results.
     Returns:
     - pd.DataFrame: The flattened JSON data as a pandas DataFrame.
     """
     records = []
-    for frame, frame_data in json_data.items():
-        for inner_key, inner_data in frame_data.items():
-            if isinstance(inner_data, dict):
-                record = {'frame_number': frame, 'inner_key': inner_key}
-                for key, value in inner_data.items():
-                    if isinstance(value, list):
-                        if all(isinstance(i, list) for i in value):
-                            for i, sublist in enumerate(value):
-                                for j, subvalue in enumerate(sublist):
-                                    record[f'{key}_{i}_{j}'] = subvalue
-                        else:
-                            for i, subvalue in enumerate(value):
-                                record[f'{key}_{i}'] = subvalue
-                    else:
-                        record[key] = value
-                records.append(record)
+    for key, value in data.items():
+        record = {"frame": key}
+        record.update(value)
+        record["body_tracking_error"] = check_results.get(key, 0)
+        records.append(record)
     return pd.DataFrame(records)
-
 
 def save_to_csv(dataframe, output_path):
     """
@@ -213,9 +205,7 @@ def main(folder_path):
     metadata_path = os.path.join(folder_path, 'metadata.json')
 
     body_tracking_data = read_body_tracking(body_tracking_path)
-    if not check_outermost_keys(body_tracking_data):
-        print("Validation failed: An outermost key does not contain a dictionary with exactly one key.")
-        return
+    check_results, error_frames = check_outermost_keys(body_tracking_data)
     # Get average frame rate from metadata
     average_frame_rate, metadata = get_average_frame_rate_from_metadata(metadata_path)
     if average_frame_rate is None:
@@ -233,9 +223,13 @@ def main(folder_path):
 
     # Save the updated body tracking data back to the JSON file
     save_body_tracking(labeled_body_tracking_data, body_tracking_path)
-
+   
+    # Update metadata with error frames
+    metadata['error_frames'] = error_frames
+    update_metadata(metadata_path, metadata)
+    
     # Flatten the body tracking JSON data to a DataFrame
-    flattened_df = flatten_json(body_tracking_data)
+    flattened_df = flatten_json(body_tracking_data, check_results)
 
     # Define the output CSV path and save the DataFrame to CSV
     folder_name = os.path.basename(folder_path)
