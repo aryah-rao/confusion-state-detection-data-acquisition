@@ -203,12 +203,13 @@ def update_calibration(experiment_folder):
         # Create the new configuration path based on the folderpath and serial number
         # Extract the base name and timestamp from the experiment folder path
         folder_name = os.path.basename(experiment_folder)
-        base_name, timestamp = folder_name.split('_')
-
+        parts = folder_name.split('_')
+        timestamp = parts[0]
+        base_name = '_'.join(parts[1:])
         # Construct the new configuration path using the base name, serial number, and timestamp
         new_configuration_path = os.path.join(
             experiment_folder,
-            f"{base_name}_{serial_number}_{timestamp}.svo2"
+            f"{timestamp}_{serial_number}_{base_name}.svo2"
         )
 
         # Update the configuration path in the camera data
