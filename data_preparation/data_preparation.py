@@ -92,7 +92,7 @@ def extract_intervals_from_metadata(metadata, average_frame_rate):
     Returns:
     - intervals (set): A set of frame numbers within the specified intervals.
     """
-    intervals_in_seconds = metadata.get("intervals", [])
+    intervals_in_seconds = metadata.get("seconds", [])
     frames_list = seconds_to_frames(intervals_in_seconds, average_frame_rate)
     intervals = set()
     for i in range(0, len(frames_list), 2):
@@ -115,8 +115,7 @@ def label_confused(body_tracking_data, intervals):
         frame_number = int(frame_number_str)
         confused_value = frame_number in intervals
         for inner_key in frame_data.keys():
-            inner_data = frame_data[inner_key]
-            frame_data[inner_key] = OrderedDict([('confused', confused_value)] + list(inner_data.items()))
+            frame_data[inner_key]["confused"] = confused_value
     return body_tracking_data
 
 def save_body_tracking(body_tracking_data, output_path):
