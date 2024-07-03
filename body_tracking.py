@@ -158,7 +158,7 @@ def main():
     # Set the body detection model to HUMAN_BODY_ACCURATE
     body_param.detection_model = sl.BODY_TRACKING_MODEL.HUMAN_BODY_ACCURATE 
     # Choose the BODY_FORMAT to use
-    body_param.body_format = sl.BODY_FORMAT.BODY_38 
+    body_param.body_format = sl.BODY_FORMAT.BODY_34
 
     # Enable Object Detection module
     zed.enable_body_tracking(body_param)
