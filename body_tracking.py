@@ -257,7 +257,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser() # Create an argument parser
     parser.add_argument('--folder_path', type=str, help='Path to the localization file', required=True)
     opt = parser.parse_args()
-
     # Validate the folder path
     if not os.path.isdir(opt.folder_path):
         print("--folder_path parameter should be an existing directory but is not: ", opt.folder_path)
