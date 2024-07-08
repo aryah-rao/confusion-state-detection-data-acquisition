@@ -4,6 +4,28 @@ import argparse
 import pandas as pd
 from collections import OrderedDict
 
+def calculate_end_times_with_updated_csv(df):
+    """
+    Calculates the end times based on start timestamp and duration.
+    
+    Parameters:
+    - df (DataFrame): The DataFrame containing start times and durations.
+    
+    Returns:
+    - list: A list of tuples with start and end times in seconds.
+    """
+    times = []
+    rh_intervals = []
+    for _, row in df.iterrows():
+        start_time = pd.to_timedelta(row['Timestamp']).total_seconds()
+        duration = pd.to_timedelta(row['Duration']).total_seconds()
+        end_time = start_time + duration
+        times.append((start_time, end_time))
+        if row['Tags'] == 'RH':
+            rh_intervals.append((start_time, end_time))
+    
+    return times, rh_intervals
+
 def get_average_frame_rate_from_metadata(metadata_path):
     """
     Reads the metadata file and retrieves the average frame rate.
@@ -23,24 +45,62 @@ def get_average_frame_rate_from_metadata(metadata_path):
         
         return average_frame_rate, metadata
 
-def seconds_to_frames(seconds_list, average_frame_rate):
+
+def seconds_to_frames(confused, seconds average_frame_rate):
     """
     Converts a list of seconds to a list of frame numbers using the average frame rate.
-
+    
     Parameters:
     - seconds_list (list): A list of seconds to convert to frames.
     - average_frame_rate (float): The average frame rate used for the conversion.
-
+    
     Returns:
-    - frames_list (list): A list of frames corresponding to the given seconds.
+    - list: A list of frame numbers corresponding to the given seconds.
     """
-    frames_list = []
+    return [int(confused * average_frame_rate for second in confused)]
+
+def update_metadata_with_csv(metadata_path, csv_path):
+    """
+    Updates metadata.json with start and end times from the CSV file and converts them to frames.
     
-    for second in seconds_list:
-        frame = int(second * average_frame_rate)
-        frames_list.append(frame)
+    Parameters:
+    - metadata_path (str): The path to the metadata.json file.
+    - csv_path (str): The path to the CSV file with highlights.
+    """
+    # Load the metadata file
+    with open(metadata_path, 'r') as f:
+        metadata = json.load(f)
     
-    return frames_list
+    # Load the CSV file and calculate the start and end times
+    df = pd.read_csv(csv_path)
+    confused_times, rh_times = calculate_end_times_with_updated_csv(df)
+
+    # Add start and end times to the seconds list in metadata
+    if "confused" not in metadata:
+        metadata["confused"] = []
+    for start_time, end_time in confused_times:
+        metadata["confused"].append(start_time)
+        metadata["confused"].append(end_time)
+    
+        # Add start and end times to the seconds list in metadata
+    if "rh" not in metadata:
+        metadata["rh"] = []
+    for start_time, end_time in rh_times:
+        metadata["rh"].append(start_time)
+        metadata["rh"].append(end_time)
+
+    # Convert the updated times to frames
+    average_frame_rate = metadata.get("average_frame_rate", 30.0)  # Default to 30.0 if not found
+    confused_frames_list = seconds_to_frames(metadata["confused"], average_frame_rate)
+    rh_frames_list = seconds_to_frames(metadata["rh"], average_frame_rate)
+    
+    # Save the frames list to metadata
+    metadata["confused_frames"] = confused_frames_list
+    metadata["rh_frames"] = rh_frames_list
+    
+    # Save the updated metadata back to the JSON file
+    with open(metadata_path, 'w') as f:
+        json.dump(metadata, f, indent=4)
 
 def update_metadata(metadata_path, metadata):
     """
@@ -100,6 +160,7 @@ def extract_intervals_from_metadata(metadata, average_frame_rate):
         intervals.update(range(start, end + 1))
     return intervals
 
+
 def label_confused(body_tracking_data, intervals):
     """
     Labels each frame in the body_tracking data as 'confused' (True) or not confused (False).
@@ -117,6 +178,36 @@ def label_confused(body_tracking_data, intervals):
         for inner_key in frame_data.keys():
             frame_data[inner_key]["confused"] = confused_value
     return body_tracking_data
+
+def label_help(body_tracking_data, rh_intervals, average_frame_rate):
+    """
+    Labels each frame in the body_tracking data as 'help' (1) if it falls within RH intervals, else 0.
+    
+    Parameters:
+    - body_tracking_data (dict): The body tracking data.
+    - rh_intervals (list): A list of tuples with start and end times for RH intervals.
+    - average_frame_rate (float): The average frame rate used for conversion.
+    
+    Returns:
+    - dict: The updated body tracking data with 'help' labels.
+    """
+    rh_intervals_in_frames = []
+    for start, end in rh_intervals:
+        start_frame = int(start * average_frame_rate)
+        end_frame = int(end * average_frame_rate)
+        rh_intervals_in_frames.append((start_frame, end_frame))
+
+    for frame_number_str, frame_data in body_tracking_data.items():
+        frame_number = int(frame_number_str)
+        help_value = 0
+        for start_frame, end_frame in rh_intervals_in_frames:
+            if start_frame <= frame_number <= end_frame:
+                help_value = 1
+                break
+        for inner_key in frame_data.keys():
+            frame_data[inner_key]["help"] = help_value
+    return body_tracking_data
+
 
 def save_body_tracking(body_tracking_data, output_path):
     """
@@ -219,11 +310,15 @@ def main(folder_path):
     """
     body_tracking_path = os.path.join(folder_path, 'body_tracking.json')
     metadata_path = os.path.join(folder_path, 'metadata.json')
+    csv_path = os.path.join(folder_path, 'reduct-highlights-export.csv' )
     
     body_tracking_data = read_body_tracking(body_tracking_path)
     # if not check_outermost_keys(body_tracking_data):
     #     print("Validation failed: An outermost key does not contain a dictionary with exactly one key.")
     #     return
+    
+    # Update metadata with CSV
+    update_metadata_with_csv(metadata_path, csv_path)
 
     # Get average frame rate from metadata
     average_frame_rate, metadata = get_average_frame_rate_from_metadata(metadata_path)
@@ -234,11 +329,17 @@ def main(folder_path):
     # Extract intervals from metadata
     intervals = extract_intervals_from_metadata(metadata, average_frame_rate)
 
-    # Read body tracking data
-    body_tracking_data = read_body_tracking(body_tracking_path)
     
     # Label the body tracking data with 'confused' based on the intervals
     labeled_body_tracking_data = label_confused(body_tracking_data, intervals)
+
+    # Load the CSV file to calculate RH intervals
+    df = pd.read_csv(csv_path)
+    _, rh_intervals = calculate_end_times_with_updated_csv(df)
+
+    # Label the body tracking data with 'help'
+    labeled_body_tracking_data = label_help(labeled_body_tracking_data, rh_intervals, average_frame_rate)
+
 
     # Save the updated body tracking data back to the JSON file
     save_body_tracking(labeled_body_tracking_data, body_tracking_path)
