@@ -275,13 +275,8 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('--mode', type=int, required=True, help=" Mode 0 is to export LEFT+RIGHT AVI.")
     parser.add_argument('--folder_path', type=str, required=True, help='Path to the folder containing .svo or .svo2 files')
     opt = parser.parse_args()
-
-    if opt.mode != 0:
-        print("Mode should be 0 for exporting LEFT+RIGHT AVI.")
-        exit()
     
     if not os.path.isdir(opt.folder_path):
         print("--folder_path parameter should be an existing directory but is not: ", opt.folder_path)
