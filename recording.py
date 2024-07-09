@@ -131,10 +131,14 @@ def main():
     # Create experiment folder
     experiment_folder = create_context_folder(context)
     
-    # Initialize ZED camera
+    # Set common parameters for camera initialization
     init = sl.InitParameters()
     init.depth_mode = sl.DEPTH_MODE.NONE  # Set configuration parameters for the ZED
-
+    init.coordinate_units = sl.UNIT.METER  # Set the unit of measurement
+    init.depth_mode = sl.DEPTH_MODE.PERFORMANCE  # Set the depth mode for performance
+    init.camera_resolution = sl.RESOLUTION.HD720  # Set the camera resolution
+    init.camera_fps = 30  # Set the camera frame rate
+    
     # Open the ZED camera
     status = cam.open(init)
     
