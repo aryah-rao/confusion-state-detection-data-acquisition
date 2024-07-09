@@ -150,10 +150,10 @@ def main():
     # Set application type based on mode input
     # The application type determines the type of image sequence to export
     app_type = AppType.LEFT_AND_RIGHT
-    if opt.mode == 1 or opt.mode == 3:
-        app_type = AppType.LEFT_AND_DEPTH
-    if opt.mode == 4:
-        app_type = AppType.LEFT_AND_DEPTH_16
+    #if opt.mode == 1 or opt.mode == 3:
+        #app_type = AppType.LEFT_AND_DEPTH
+    #if opt.mode == 4:
+        #app_type = AppType.LEFT_AND_DEPTH_16
 
     # Get the file paths
     current_folder_name = os.path.basename(folder_path)
@@ -290,14 +290,14 @@ def main():
 if __name__ == "__main__":
     # Argument parser for command line options
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('--mode', type=int, required=True, help=" Mode 0 is to export LEFT+RIGHT AVI. \n Mode 1 is to export LEFT+DEPTH_VIEW Avi. \n Mode 2 is to export LEFT+RIGHT image sequence. \n Mode 3 is to export LEFT+DEPTH_View image sequence. \n Mode 4 is to export LEFT+DEPTH_16BIT image sequence.")
+    #parser.add_argument('--mode', type=int, required=True, help=" Mode 0 is to export LEFT+RIGHT AVI. \n Mode 1 is to export LEFT+DEPTH_VIEW Avi. \n Mode 2 is to export LEFT+RIGHT image sequence. \n Mode 3 is to export LEFT+DEPTH_View image sequence. \n Mode 4 is to export LEFT+DEPTH_16BIT image sequence.")
     parser.add_argument('--folder_path', type=str, required=True, help='Path to the folder containing .svo2 files')
     opt = parser.parse_args()
     
     # Validate the mode input
-    if opt.mode > 4 or opt.mode < 0:
-        print("Mode should be between 0 and 4 included. \n Mode 0 is to export LEFT+RIGHT AVI. \n Mode 1 is to export LEFT+DEPTH_VIEW Avi. \n Mode 2 is to export LEFT+RIGHT image sequence. \n Mode 3 is to export LEFT+DEPTH_View image sequence. \n Mode 4 is to export LEFT+DEPTH_16BIT image sequence.")
-        exit()
+    #if opt.mode > 4 or opt.mode < 0:
+        #print("Mode should be between 0 and 4 included. \n Mode 0 is to export LEFT+RIGHT AVI. \n Mode 1 is to export LEFT+DEPTH_VIEW Avi. \n Mode 2 is to export LEFT+RIGHT image sequence. \n Mode 3 is to export LEFT+DEPTH_View image sequence. \n Mode 4 is to export LEFT+DEPTH_16BIT image sequence.")
+        #exit()
     
     # Validate the folder path
     if not os.path.isdir(opt.folder_path):
